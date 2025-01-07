@@ -113,7 +113,7 @@ public:
     bool isQuickEdit() const { return pageModifier() && isStep() && step() >= 8; }
     int quickEdit() const { return step() - 8; }
 
-    bool isContextMenu() const { return (is(Page) && shiftModifier()) || (is(Shift) && pageModifier()); }
+    bool isContextMenu() const { return shiftModifier() && isShift(); }
 
     bool isEncoder() const { return is(Encoder); }
 

@@ -8,7 +8,8 @@ Page::Page(PageManager &manager) :
 }
 
 void Page::show() {
-    _manager.push(this);
+    if (!isTop())
+        _manager.push(this);
 }
 
 void Page::close() {

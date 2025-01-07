@@ -32,6 +32,10 @@ protected:
 
     const KeyState &pageKeyState() const { return _context.pageKeyState; }
     const KeyState &globalKeyState() const { return _context.globalKeyState; }
+    void clearModifiers() const {
+        _context.globalKeyState[ Key::Shift ] = false;
+        _context.globalKeyState[ Key::Page ] = false;
+    }
 
     PageContext &_context;
     Model &_model;

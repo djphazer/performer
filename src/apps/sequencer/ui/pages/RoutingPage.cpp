@@ -101,7 +101,7 @@ void RoutingPage::keyPress(KeyPressEvent &event) {
 }
 
 void RoutingPage::encoder(EncoderEvent &event) {
-    if (!edit() && pageKeyState()[Key::Shift]) {
+    if (!edit() && globalKeyState()[Key::Shift]) {
         selectRoute(_routeIndex + event.value());
         event.consume();
         return;

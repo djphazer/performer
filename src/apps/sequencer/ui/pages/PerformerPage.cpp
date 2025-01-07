@@ -235,7 +235,7 @@ void PerformerPage::encoder(EncoderEvent &event) {
 void PerformerPage::updateFills() {
     auto &playState = _project.playState();
     bool fillPressed = pageKeyState()[MatrixMap::fromFunction(int(Function::Fill))];
-    bool holdPressed = pageKeyState()[Key::Shift];
+    bool holdPressed = globalKeyState()[Key::Shift];
 
     for (int trackIndex = 0; trackIndex < CONFIG_TRACK_COUNT; ++trackIndex) {
         bool trackFill = pageKeyState()[MatrixMap::fromStep(8 + trackIndex)];

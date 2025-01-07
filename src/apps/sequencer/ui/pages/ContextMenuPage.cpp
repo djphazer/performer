@@ -53,7 +53,7 @@ void ContextMenuPage::draw(Canvas &canvas) {
 void ContextMenuPage::keyUp(KeyEvent &event) {
     const auto &key = event.key();
 
-    if (!key.pageModifier() || !key.shiftModifier()) {
+    if (!key.shiftModifier()) {
         close();
         event.consume();
     }
@@ -67,12 +67,12 @@ void ContextMenuPage::keyPress(KeyPressEvent &event) {
         if (_contextMenuModel->itemEnabled(itemIndex)) {
             closeAndCallback(itemIndex);
         }
+        clearModifiers();
         event.consume();
     }
 }
 
 void ContextMenuPage::encoder(EncoderEvent &event) {
-    event.consume();
 }
 
 void ContextMenuPage::closeAndCallback(int index) {

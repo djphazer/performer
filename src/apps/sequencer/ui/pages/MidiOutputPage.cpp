@@ -71,7 +71,7 @@ void MidiOutputPage::keyPress(KeyPressEvent &event) {
 }
 
 void MidiOutputPage::encoder(EncoderEvent &event) {
-    if (!edit() && pageKeyState()[Key::Shift]) {
+    if (!edit() && globalKeyState()[Key::Shift]) {
         selectOutput(_outputIndex + event.value());
         event.consume();
         return;

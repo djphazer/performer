@@ -35,7 +35,8 @@ void Ui::init() {
     _globalKeyState.reset();
 
     _pageManager.setPageSwitchHandler([this] (Page *page) {
-        _pageKeyState.reset();
+        //_pageKeyState.reset();
+        //_globalKeyState.reset();
     });
 
     _pageManager.push(&_pages.top);
@@ -82,8 +83,15 @@ void Ui::update() {
         return;
     }
 
+    bool blink = (os::ticks() % os::time::ms(200)) < os::time::ms(100);
     _leds.clear();
     _pageManager.updateLeds(_leds);
+    if (_globalKeyState[Key::Shift]) {
+        _leds.set(Key::Shift, blink, false);
+    }
+    if (_globalKeyState[Key::Page]) {
+        _leds.set(Key::Page, blink, false);
+    }
     _blm.setLeds(_leds.array());
 
     // update display at target fps
@@ -133,12 +141,28 @@ void Ui::showAssert(const char *filename, int line, const char *msg) {
 }
 
 void Ui::handleKeys() {
+    static bool cancel_mods = false;
+
     ButtonLedMatrix::Event event;
     while (_blm.nextEvent(event)) {
         bool isDown = event.action() == ButtonLedMatrix::Event::KeyDown;
-        _pageKeyState[event.value()] = isDown;
-        _globalKeyState[event.value()] = isDown;
-        Key key(event.value(), _globalKeyState);
+        const auto whichKey = event.value();
+
+        if (whichKey == Key::Page || whichKey == Key::Shift) {
+            if (isDown) {
+                _globalKeyState.flip(whichKey);
+            } else if (cancel_mods) {
+                _globalKeyState[whichKey] = false;
+            }
+            cancel_mods = false;
+        } else {
+            _globalKeyState[whichKey] = isDown;
+            // Page or Shift keys turn off on keyUp if another key was pressed and released
+            cancel_mods = cancel_mods || !isDown;
+        }
+        // TODO: eliminate _pageKeyState; it's redundant
+        _pageKeyState[whichKey] = _globalKeyState[whichKey];
+        Key key(whichKey, _globalKeyState);
 
         KeyEvent keyEvent(isDown ? Event::KeyDown : Event::KeyUp, key);
         _screensaver.consumeKey(keyEvent);
