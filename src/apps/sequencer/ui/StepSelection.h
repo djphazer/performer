@@ -71,7 +71,7 @@ public:
             return;
         }
 
-        if (key.isShift() && event.count() == 2) {
+        if (key.isEncoder()) {
             if (none()) {
                 selectAll();
             } else if (_mode == Mode::Persist) {
