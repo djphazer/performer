@@ -73,12 +73,6 @@ int PageManager::fps() const {
 
 
 void PageManager::dispatchEvent(Event &event) {
-    // handle modal page
-    if (top()->isModal() && !event.consumed()) {
-        top()->dispatchEvent(event);
-        return;
-    }
-
     // handle top to bottom
     for (int i = _pageStackPos; i >= 0; --i) {
         if (event.consumed()) {
