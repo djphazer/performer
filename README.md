@@ -1,12 +1,24 @@
 ![Build Status](https://github.com/djphazer/performer/actions/workflows/ci.yml/badge.svg?branch=master)
 
-# PEW|FORMER
+# PEW|FORMER (dev branch)
 
 _From [Phazerville](https://phazerville.com) with Love <3_
 
 I'm working to bring this firmware up-to-date, and make myself at home with the UI controls. I've managed to update the toolchain to gcc 14.2, libopencm3 to the latest from October 2024, and the GitHub Actions CI workflow will produce an artifact file with the binaries for every push.
 
 After encountering instability on the mebitek fork, I've decided to start from the known-good master branch of the original firmware, and carefully work in some of the new features from other forks.
+
+## Phazerville Improvements
+
+Some things are broken... it will get worse before it gets better!
+
+* Latching Shift key modifier
+* Page key invokes a new "Home" page, with navigation shortcuts to other pages
+* Extra nav shortcuts on Project, Track, and Sequence pages
+* Double-click Track buttons to jump to Sequence edit page from most places
+* Cubes screensaver
+
+TODO: QuickEdit settings in Sequence editors - hard to access after making Page key into the HomePage key...
 
 ## jackpf Improvements
 

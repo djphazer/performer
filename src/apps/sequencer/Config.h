@@ -4,10 +4,10 @@
 
 // Version tag
 #define CONFIG_VERSION_MAGIC            0xfadebabe
-#define CONFIG_VERSION_NAME             "PEW|FORMER SEQUENCER"
+#define CONFIG_VERSION_NAME             "PEW|former Alpha"
 #define CONFIG_VERSION_MAJOR            0
-#define CONFIG_VERSION_MINOR            5
-#define CONFIG_VERSION_REVISION         0
+#define CONFIG_VERSION_MINOR            99
+#define CONFIG_VERSION_REVISION         5
 
 // Task priorities
 #define CONFIG_DRIVER_TASK_PRIORITY     5
