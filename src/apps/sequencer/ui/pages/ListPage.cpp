@@ -51,10 +51,6 @@ void ListPage::updateLeds(Leds &leds) {
 void ListPage::keyPress(KeyPressEvent &event) {
     const auto &key = event.key();
 
-    if (key.pageModifier()) {
-        return;
-    }
-
     if (key.isLeft()) {
         if (_edit) {
             _listModel->edit(_selectedRow, 1, -1, globalKeyState()[Key::Shift]);

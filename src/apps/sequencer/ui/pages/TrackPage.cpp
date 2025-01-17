@@ -55,10 +55,6 @@ void TrackPage::keyPress(KeyPressEvent &event) {
         return;
     }
 
-    if (key.pageModifier()) {
-        return;
-    }
-
     if (key.isTrackSelect()) {
         _project.setSelectedTrackIndex(key.trackSelect());
         setTrack(_project.selectedTrack());

@@ -48,6 +48,7 @@ SystemPage::SystemPage(PageManager &manager, PageContext &context) :
 }
 
 void SystemPage::enter() {
+    clearModifiers();
     setOutputIndex(_project.selectedTrackIndex());
 
     _engine.suspend();

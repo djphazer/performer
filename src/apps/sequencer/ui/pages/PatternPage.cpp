@@ -226,10 +226,6 @@ void PatternPage::keyPress(KeyPressEvent &event) {
         return;
     }
 
-    if (key.pageModifier()) {
-        return;
-    }
-
     if (key.isTrackSelect()) {
         event.consume();
     }

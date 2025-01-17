@@ -298,10 +298,6 @@ void NoteSequenceEditPage::keyPress(KeyPressEvent &event) {
         return;
     }
 
-    if (key.pageModifier()) {
-        return;
-    }
-
     _stepSelection.keyPress(event, stepOffset());
     updateMonitorStep();
 

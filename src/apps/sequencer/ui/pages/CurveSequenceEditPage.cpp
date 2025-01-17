@@ -325,10 +325,6 @@ void CurveSequenceEditPage::keyPress(KeyPressEvent &event) {
         return;
     }
 
-    if (key.pageModifier()) {
-        return;
-    }
-
     if (key.isEncoder() && layer() == Layer::Shape && globalKeyState()[Key::Shift] && _stepSelection.count() > 1) {
         auto firstStep = sequence.step(_stepSelection.firstSetIndex());
         auto lastStep = sequence.step(_stepSelection.lastSetIndex());

@@ -73,6 +73,12 @@ int PageManager::fps() const {
 
 
 void PageManager::dispatchEvent(Event &event) {
+    if (event.type() == Event::KeyPress && event.as<KeyPressEvent>().key().isPageSelect()) {
+        // page-switching gestures are handled in TopPage
+        // TODO: move all page-switch logic from TopPage into PageManager
+        _pageStack[0]->dispatchEvent(event);
+    }
+
     // handle top to bottom
     for (int i = _pageStackPos; i >= 0; --i) {
         if (event.consumed()) {

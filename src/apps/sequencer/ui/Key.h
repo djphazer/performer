@@ -61,6 +61,56 @@ public:
         Encoder = 40,
     };
 
+    // page select key aliases
+    enum Page {
+        Clock           = Tempo,
+        //Pattern         = Key::Pattern,
+        //Performer       = Key::Performer,
+        Overview        = Left,
+
+        Project         = Track0,
+        Layout          = Track1,
+        Routing         = Track2,
+        MidiOutput      = Track3,
+        UserScale       = Track4,
+
+        SequenceEdit    = Step0,
+        Sequence        = Step1,
+        Track           = Step2,
+        Song            = Step3,
+
+        System          = Track7,
+        Monitor         = Step7,
+    };
+
+    static bool isPageKey(int code) {
+        switch (code) {
+        case Clock:
+        case Pattern:
+        case Performer:
+        case Overview:
+
+        case Project:
+        case Layout:
+        case Routing:
+        case MidiOutput:
+        case UserScale:
+
+        case SequenceEdit:
+        case Sequence:
+        case Track:
+        case Song:
+
+        case System:
+        case Monitor:
+            return true;
+        default:
+            break;
+        }
+
+        return false;
+    }
+
     Key(int code, const KeyState &state) : _code(code), _state(state) {}
 
     int code() const { return _code; }
@@ -100,7 +150,7 @@ public:
     bool isTrackSelect() const { return !pageModifier() && isTrack(); }
     int trackSelect() const { return track(); }
 
-    bool isPageSelect() const { return pageModifier() && (isTrack() || (isStep() && step() < 8)); }
+    bool isPageSelect() const { return pageModifier() && isPageKey(_code); }
     int pageSelect() const {
         if (isTrack()) {
             return track();

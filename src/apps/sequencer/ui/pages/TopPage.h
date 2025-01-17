@@ -2,8 +2,6 @@
 
 #include "BasePage.h"
 
-#include "ui/PageKeyMap.h"
-
 #include "model/Routing.h"
 
 class TopPage : public BasePage {
@@ -24,23 +22,23 @@ public:
 private:
     enum Mode : uint8_t {
         // main modes
-        Project         = PageKeyMap::Project,
-        Layout          = PageKeyMap::Layout,
-        Track           = PageKeyMap::Track,
-        Sequence        = PageKeyMap::Sequence,
-        SequenceEdit    = PageKeyMap::SequenceEdit,
-        Song            = PageKeyMap::Song,
-        Routing         = PageKeyMap::Routing,
-        MidiOutput      = PageKeyMap::MidiOutput,
-        Pattern         = PageKeyMap::Pattern,
-        Performer       = PageKeyMap::Performer,
-        Overview        = PageKeyMap::Overview,
-        Clock           = PageKeyMap::Clock,
+        Project         = Key::Project,
+        Layout          = Key::Layout,
+        Track           = Key::Track,
+        Sequence        = Key::Sequence,
+        SequenceEdit    = Key::SequenceEdit,
+        Song            = Key::Song,
+        Routing         = Key::Routing,
+        MidiOutput      = Key::MidiOutput,
+        Pattern         = Key::Pattern,
+        Performer       = Key::Performer,
+        Overview        = Key::Overview,
+        Clock           = Key::Clock,
 
         // aux modes
-        UserScale       = PageKeyMap::UserScale,
-        Monitor         = PageKeyMap::Monitor,
-        System          = PageKeyMap::System,
+        UserScale       = Key::UserScale,
+        Monitor         = Key::Monitor,
+        System          = Key::System,
 
         Last,
     };

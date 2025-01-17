@@ -59,10 +59,6 @@ void NoteSequencePage::keyPress(KeyPressEvent &event) {
         return;
     }
 
-    if (key.pageModifier()) {
-        return;
-    }
-
     if (!event.consumed()) {
         ListPage::keyPress(event);
     }

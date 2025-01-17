@@ -186,10 +186,6 @@ void PerformerPage::keyPress(KeyPressEvent &event) {
     const auto &key = event.key();
     auto &playState = _project.playState();
 
-    if (key.pageModifier()) {
-        return;
-    }
-
     // use immediate by default
     // use latched when LATCH is pressed
     // use synced when SYNC is pressed

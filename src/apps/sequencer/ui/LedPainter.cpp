@@ -2,7 +2,6 @@
 #include "Leds.h"
 #include "MatrixMap.h"
 #include "Key.h"
-#include "PageKeyMap.h"
 
 #include "engine/Engine.h"
 
@@ -54,7 +53,7 @@ void LedPainter::drawNoteSequenceGateAndCurrentStep(Leds &leds, const NoteSequen
 
 void LedPainter::drawSelectedPage(Leds &leds, int page) {
     auto setLed = [&] (int code) {
-        bool isPageKey = PageKeyMap::isPageKey(code);
+        bool isPageKey = Key::isPageKey(code);
         bool selected = page == code;
         leds.set(code, selected, isPageKey);
         leds.mask(code);

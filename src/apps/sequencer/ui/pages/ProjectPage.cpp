@@ -57,12 +57,9 @@ void ProjectPage::keyPress(KeyPressEvent &event) {
         return;
     }
 
-    if (key.pageModifier()) {
+    if (key.pageModifier() && key.is(Key::Step15)) {
         // easter egg
-        if (key.is(Key::Step15)) {
-            _manager.pages().asteroids.show();
-        }
-        return;
+        _manager.pages().asteroids.show();
     }
 
     if (key.is(Key::Encoder) && selectedRow() == 0) {
