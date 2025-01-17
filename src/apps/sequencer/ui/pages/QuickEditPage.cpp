@@ -52,6 +52,7 @@ void QuickEditPage::keyUp(KeyEvent &event) {
     event.consume();
 
     if (globalKeyState()[Key::Page]) {
+        clearModifiers();
         return;
     }
     for (int i = 8; i < 16; ++i) {
@@ -73,6 +74,8 @@ void QuickEditPage::keyPress(KeyPressEvent &event) {
     } else if (key.isStep()) {
         _listModel->setIndexed(_row, key.step());
     }
+
+    event.consume();
 }
 
 void QuickEditPage::encoder(EncoderEvent &event) {
