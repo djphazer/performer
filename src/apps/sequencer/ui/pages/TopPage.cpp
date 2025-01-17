@@ -100,8 +100,9 @@ void TopPage::keyPress(KeyPressEvent &event) {
         return;
     }
 
-    if (key.pageModifier()) {
+    if (key.isPageSelect()) {
         setMode(Mode(key.code()));
+        _context.globalKeyState[ Key::Shift ] = false;
         event.consume();
     } else {
         if (key.isPattern() && _mode != Mode::Pattern) {
