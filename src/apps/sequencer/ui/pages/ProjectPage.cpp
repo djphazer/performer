@@ -172,7 +172,7 @@ void ProjectPage::saveAsProject() {
 }
 
 void ProjectPage::initRoute() {
-    _manager.pages().top.editRoute(_listModel.routingTarget(selectedRow()), 0);
+    _manager.pages().home.editRoute(_listModel.routingTarget(selectedRow()), 0);
 }
 
 void ProjectPage::saveProjectToSlot(int slot) {

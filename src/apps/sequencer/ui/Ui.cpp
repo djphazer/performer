@@ -39,8 +39,8 @@ void Ui::init() {
         //_globalKeyState.reset();
     });
 
-    _pageManager.push(&_pages.top);
-    _pages.top.init();
+    _pageManager.push(&_pages.home);
+    _pages.home.init();
 #ifdef CONFIG_ENABLE_INTRO
     _pageManager.push(&_pages.intro);
 #endif
@@ -148,7 +148,7 @@ void Ui::handleKeys() {
         bool isDown = event.action() == ButtonLedMatrix::Event::KeyDown;
         const auto whichKey = event.value();
 
-        if (whichKey == Key::Page || whichKey == Key::Shift) {
+        if (whichKey == Key::Shift) {
             if (isDown) {
                 _globalKeyState.flip(whichKey);
             } else if (cancel_mods) {

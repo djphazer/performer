@@ -4,14 +4,15 @@
 
 #include "model/Routing.h"
 
-class TopPage : public BasePage {
+class HomePage : public BasePage {
 public:
-    TopPage(PageManager &manager, PageContext &context);
+    HomePage(PageManager &manager, PageContext &context);
 
     void init();
 
     void editRoute(Routing::Target target, int trackIndex);
 
+    virtual void draw(Canvas &canvas) override;
     virtual void updateLeds(Leds &leds) override;
 
     virtual void keyDown(KeyEvent &event) override;
@@ -41,6 +42,18 @@ private:
         System          = Key::System,
 
         Last,
+    };
+    enum Function : uint8_t {
+        F1_Overview,
+        F2_Project,
+        F3_Track,
+        F4_UserScales,
+        F5_SystemMonitor,
+
+        FUNCTION_COUNT
+    };
+    const Mode FunctionModeMap[FUNCTION_COUNT] = {
+        Overview, Project, Track, UserScale, Monitor
     };
 
     void setMode(Mode mode);

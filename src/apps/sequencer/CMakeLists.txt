@@ -95,7 +95,7 @@ set(sources
     ui/pages/SystemPage.cpp
     ui/pages/TempoPage.cpp
     ui/pages/TextInputPage.cpp
-    ui/pages/TopPage.cpp
+    ui/pages/HomePage.cpp
     ui/pages/TrackPage.cpp
     ui/pages/UserScalePage.cpp
     # ui/painters

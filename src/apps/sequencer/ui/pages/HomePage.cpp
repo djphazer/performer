@@ -1,4 +1,4 @@
-#include "TopPage.h"
+#include "HomePage.h"
 
 #include "Pages.h"
 
@@ -6,14 +6,16 @@
 #include "ui/model/CurveSequenceListModel.h"
 
 #include "ui/LedPainter.h"
+#include "ui/painters/WindowPainter.h"
 
-TopPage::TopPage(PageManager &manager, PageContext &context) :
+HomePage::HomePage(PageManager &manager, PageContext &context) :
     BasePage(manager, context)
 {
 }
 
-void TopPage::init() {
+void HomePage::init() {
     setMode(Mode::Project);
+    //setMode(Mode::Overview);
 
     _context.model.project().watch([this] (Project::Event event) {
         auto &pages = _manager.pages();
@@ -35,7 +37,7 @@ void TopPage::init() {
     });
 }
 
-void TopPage::editRoute(Routing::Target target, int trackIndex) {
+void HomePage::editRoute(Routing::Target target, int trackIndex) {
     auto &routing = _project.routing();
 
     if (target == Routing::Target::None) {
@@ -62,7 +64,23 @@ void TopPage::editRoute(Routing::Target target, int trackIndex) {
     }
 }
 
-void TopPage::updateLeds(Leds &leds) {
+void HomePage::draw(Canvas &canvas) {
+    // TODO: Home page jump options
+    //_manager.pages().overview.draw(canvas);
+
+    //Overview, Project, Track, UserScale, Monitor
+    const char *functionNames[] = { "Overview", "Project", "Track", "Scales", "System" };
+
+    WindowPainter::clear(canvas);
+    WindowPainter::drawHeader(canvas, _model, _engine, "HOME");
+    //WindowPainter::drawActiveFunction(canvas, "whateven");
+    WindowPainter::drawFooter(canvas, functionNames, globalKeyState(), -1);
+
+    canvas.setFont(Font::Small);
+    canvas.drawTextCentered(0, 20, Width, 16, "Home Page :)");
+}
+
+void HomePage::updateLeds(Leds &leds) {
     bool clockTick = _engine.clockRunning() && _engine.tick() % CONFIG_PPQN < (CONFIG_PPQN / 8);
 
     leds.set(
@@ -71,39 +89,47 @@ void TopPage::updateLeds(Leds &leds) {
         clockTick
     );
 
-    if (globalKeyState()[Key::Page] && !globalKeyState()[Key::Shift]) {
+    if (isTop() && !globalKeyState()[Key::Shift]) {
         LedPainter::drawSelectedPage(leds, _mode);
     } else {
         LedPainter::drawTrackGatesAndSelectedTrack(leds, _engine, _project.playState(), _project.selectedTrackIndex());
     }
 }
 
-void TopPage::keyDown(KeyEvent &event) {
+void HomePage::keyDown(KeyEvent &event) {
     event.consume();
 }
 
-void TopPage::keyUp(KeyEvent &event) {
+void HomePage::keyUp(KeyEvent &event) {
     event.consume();
 }
 
-void TopPage::keyPress(KeyPressEvent &event) {
+void HomePage::keyPress(KeyPressEvent &event) {
     auto &pages = _manager.pages();
     const auto &key = event.key();
 
-    if (key.isTrackSelect()) {
-        _project.setSelectedTrackIndex(key.trackSelect());
-        event.consume();
-    }
     if (key.isTrack() && event.count() == 2) {
         setMode(Mode::SequenceEdit);
         event.consume();
         return;
     }
-
-    if (key.isPageSelect()) {
-        setMode(Mode(key.code()));
-        _context.globalKeyState[ Key::Shift ] = false;
+    if (key.isTrackSelect()) {
+        _project.setSelectedTrackIndex(key.trackSelect());
         event.consume();
+        return;
+    }
+
+    if (isTop()) {
+        if (key.pageSelect() > -1) {
+            setMode(Mode(key.code()));
+            _context.globalKeyState[ Key::Shift ] = false;
+            event.consume();
+        }
+        if (key.isFunction()) {
+            // Nav shortcuts on F-keys
+            setMode( FunctionModeMap[key.function()] );
+            event.consume();
+        }
     } else {
         if (key.isPattern() && _mode != Mode::Pattern) {
             pages.pattern.setModal(true);
@@ -136,11 +162,11 @@ void TopPage::keyPress(KeyPressEvent &event) {
     event.consume();
 }
 
-void TopPage::encoder(EncoderEvent &event) {
+void HomePage::encoder(EncoderEvent &event) {
     event.consume();
 }
 
-void TopPage::setMode(Mode mode) {
+void HomePage::setMode(Mode mode) {
     auto &pages = _manager.pages();
 
     _lastMode = _mode;
@@ -213,7 +239,7 @@ void TopPage::setMode(Mode mode) {
     _mode = mode;
 }
 
-void TopPage::setMainPage(Page &page) {
+void HomePage::setMainPage(Page &page) {
     if (_manager.stackSize() < 2) {
         _manager.push(&page);
     } else {
@@ -221,7 +247,7 @@ void TopPage::setMainPage(Page &page) {
     }
 }
 
-void TopPage::setSequencePage() {
+void HomePage::setSequencePage() {
     auto &pages = _manager.pages();
 
     switch (_project.selectedTrack().trackMode()) {
@@ -239,7 +265,7 @@ void TopPage::setSequencePage() {
     }
 }
 
-void TopPage::setSequenceEditPage() {
+void HomePage::setSequenceEditPage() {
     auto &pages = _manager.pages();
 
     switch (_project.selectedTrack().trackMode()) {

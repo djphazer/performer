@@ -102,6 +102,7 @@ public:
         Right = Global5,
         Shift = Global6,
         Page = Global7,
+        Home = Global7,
         F0 = MatrixMap::fromFunction(0),
         F1 = MatrixMap::fromFunction(1),
         F2 = MatrixMap::fromFunction(2),
@@ -111,7 +112,7 @@ public:
     };
 
     // page select key aliases
-    enum Page {
+    enum PageKey {
         Clock           = Tempo,
         //Pattern         = Key::Pattern,
         //Performer       = Key::Performer,
@@ -181,6 +182,7 @@ public:
     bool isLeft() const { return _code == Left; }
     bool isRight() const { return _code == Right; }
     bool isPage() const { return _code == Page; };
+    bool isHome() const { return _code == Home; };
     bool isShift() const { return _code == Shift; }
 
     // button groups

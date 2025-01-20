@@ -128,5 +128,5 @@ void NoteSequencePage::duplicateSequence() {
 }
 
 void NoteSequencePage::initRoute() {
-    _manager.pages().top.editRoute(_listModel.routingTarget(selectedRow()), _project.selectedTrackIndex());
+    _manager.pages().home.editRoute(_listModel.routingTarget(selectedRow()), _project.selectedTrackIndex());
 }

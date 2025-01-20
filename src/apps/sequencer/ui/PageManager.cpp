@@ -1,4 +1,5 @@
 #include "PageManager.h"
+#include "pages/Pages.h"
 
 #include "core/Debug.h"
 
@@ -73,10 +74,8 @@ int PageManager::fps() const {
 
 
 void PageManager::dispatchEvent(Event &event) {
-    if (event.type() == Event::KeyPress && event.as<KeyPressEvent>().key().isPageSelect()) {
-        // page-switching gestures are handled in TopPage
-        // TODO: move all page-switch logic from TopPage into PageManager
-        _pageStack[0]->dispatchEvent(event);
+    if (event.type() == Event::KeyPress && event.as<KeyPressEvent>().key().isHome()) {
+        reset(&_pages.home);
     }
 
     // handle top to bottom

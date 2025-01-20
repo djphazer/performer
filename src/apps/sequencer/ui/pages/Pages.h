@@ -27,7 +27,7 @@
 #include "SystemPage.h"
 #include "TempoPage.h"
 #include "TextInputPage.h"
-#include "TopPage.h"
+#include "HomePage.h"
 #include "TrackPage.h"
 #include "UserScalePage.h"
 
@@ -39,7 +39,7 @@
 #endif
 
 struct Pages {
-    TopPage top;
+    HomePage home;
     // main pages
     ProjectPage project;
     LayoutPage layout;
@@ -80,7 +80,7 @@ struct Pages {
 #endif
 
     Pages(PageManager &manager, PageContext &context) :
-        top(manager, context),
+        home(manager, context),
         // main pages
         project(manager, context),
         layout(manager, context),
