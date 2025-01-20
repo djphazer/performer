@@ -29,7 +29,7 @@ private:
 
     static const int StepCount = 16;
 
-    int stepOffset() const { return _section * StepCount; }
+    int stepOffset() const { return _project.selectedCurveSequence().section() * StepCount; }
 
     void switchLayer(int functionKey, bool shift);
     int activeFunctionKey();
@@ -55,7 +55,6 @@ private:
 
     ContextMenu _contextMenu;
 
-    int _section = 0;
     bool _showDetail;
     uint32_t _showDetailTicks;
 
@@ -64,4 +63,6 @@ private:
     StepSelection<CONFIG_STEP_COUNT> _stepSelection;
 
     Container<CurveSequenceBuilder> _builderContainer;
+
+    CurveSequence _inMemorySequence;
 };

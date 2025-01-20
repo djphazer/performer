@@ -39,7 +39,30 @@ public:
             newTrackModes[i] = _trackModes[i];
         }
         for (int i = 0; i < CONFIG_TRACK_COUNT; ++i) {
+            int logicTrack = -1;
             if (newTrackModes[i] != project.track(i).trackMode()) {
+                if (project.track(i).trackMode() == Track::TrackMode::Logic) {
+                    // reset related logic track inputs
+                    logicTrack = i;
+                    auto in1 = project.track(i).logicTrack().inputTrack1();
+                    if (in1 != -1) {
+                        project.track(in1).noteTrack().setLogicTrack(-1);
+                        project.track(in1).noteTrack().setLogicTrackInput(-1);
+                    }
+                    auto in2 = project.track(i).logicTrack().inputTrack2();
+                    if (in2 != -1 ) {
+                        project.track(in2).noteTrack().setLogicTrack(-1);
+                        project.track(in2).noteTrack().setLogicTrackInput(-1);
+                    }
+                    for (int j = 0; j < CONFIG_TRACK_COUNT; ++j) {
+                        if (project.track(j).trackMode() == Track::TrackMode::Note && logicTrack != -1) {
+                            if (project.track(j).noteTrack().logicTrack() == logicTrack) {
+                                project.track(j).noteTrack().setLogicTrack(-1);
+                            }
+                        }
+                    }
+                    logicTrack = -1;
+                }
                 project.setTrackMode(i, newTrackModes[i]);
             }
         }
@@ -64,6 +87,9 @@ public:
     virtual void edit(int row, int column, int value, bool shift) override {
         if (column == 1) {
             _trackModes[row] = ModelUtils::adjustedEnum(_trackModes[row], value);
+            if (row < 2 && _trackModes[row] == Track::TrackMode::Logic) {
+                _trackModes[row] = Track::TrackMode::Arp;
+            }
         }
     }
 

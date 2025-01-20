@@ -44,6 +44,23 @@ public:
         return nullptr;
     }
 
+    static const char *modeNameAbbr(Mode mode) {
+        switch (mode) {
+        case Mode::PlayOrder:   return "Ord";
+        case Mode::Up:          return "Up";
+        case Mode::Down:        return "Dwn";
+        case Mode::UpDown:      return "UpDwn";
+        case Mode::DownUp:      return "DwnUp";
+        case Mode::UpAndDown:   return "U&D";
+        case Mode::DownAndUp:   return "D&U";
+        case Mode::Converge:    return "Cnvrg";
+        case Mode::Diverge:     return "Dvrg";
+        case Mode::Random:      return "Rnd";
+        case Mode::Last:        break;
+        }
+        return nullptr;  
+    }
+
     static uint8_t modeSerialize(Mode mode) {
         switch (mode) {
         case Mode::PlayOrder:   return 0;
@@ -110,6 +127,10 @@ public:
         str(modeName(mode()));
     }
 
+    void printModeAbbr(StringBuilder &str) const {
+        str(modeNameAbbr(mode()));
+    }
+
     // divisor
 
     int divisor() const { return _divisor; }
@@ -123,6 +144,10 @@ public:
 
     void printDivisor(StringBuilder &str) const {
         ModelUtils::printDivisor(str, divisor());
+    }
+
+    void printDivisorAbbr(StringBuilder &str) const {
+        ModelUtils::printDivisorAbbr(str, divisor());
     }
 
     // gateLength
@@ -163,6 +188,21 @@ public:
             str("Down %d", -value);
         } else if (value >= -10) {
             str("Down Up %d", -(value + 5));
+        }
+    }
+
+    void printOctavesAbbr(StringBuilder &str) const {
+        int value = octaves();
+        if (value > 5) {
+            str("UD %d", value - 5);
+        } else if (value > 0) {
+            str("Up %d", value);
+        } else if (value == 0) {
+            str("Off");
+        } else if (value >= -5) {
+            str("Dw %d", -value);
+        } else if (value >= -10) {
+            str("DU %d", -(value + 5));
         }
     }
 

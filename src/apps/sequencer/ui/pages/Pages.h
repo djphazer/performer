@@ -24,6 +24,12 @@
 #include "RoutingPage.h"
 #include "SongPage.h"
 #include "StartupPage.h"
+#include "StochasticSequenceEditPage.h"
+#include "StochasticSequencePage.h"
+#include "LogicSequenceEditPage.h"
+#include "LogicSequencePage.h"
+#include "ArpSequenceEditPage.h"
+#include "ArpSequencePage.h"
 #include "SystemPage.h"
 #include "TempoPage.h"
 #include "TextInputPage.h"
@@ -46,8 +52,14 @@ struct Pages {
     TrackPage track;
     NoteSequencePage noteSequence;
     CurveSequencePage curveSequence;
+    StochasticSequencePage stochasticSequence;
     NoteSequenceEditPage noteSequenceEdit;
     CurveSequenceEditPage curveSequenceEdit;
+    StochasticSequenceEditPage stochasticSequenceEdit;
+    LogicSequencePage logicSequence;
+    LogicSequenceEditPage logicSequenceEdit;
+    ArpSequencePage arpSequence;
+    ArpSequenceEditPage arpSequenceEdit;
     PatternPage pattern;
     PerformerPage performer;
     SongPage song;
@@ -87,8 +99,14 @@ struct Pages {
         track(manager, context),
         noteSequence(manager, context),
         curveSequence(manager, context),
+        stochasticSequence(manager, context),
         noteSequenceEdit(manager, context),
         curveSequenceEdit(manager, context),
+        stochasticSequenceEdit(manager, context),
+        logicSequence(manager, context),
+        logicSequenceEdit(manager, context),
+        arpSequence(manager, context),
+        arpSequenceEdit(manager, context),
         pattern(manager, context),
         performer(manager, context),
         song(manager, context),

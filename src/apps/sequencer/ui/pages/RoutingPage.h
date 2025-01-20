@@ -30,8 +30,9 @@ private:
     void selectRoute(int routeIndex);
     void assignMidiLearn(const MidiLearn::Result &result);
 
+    Routing::Route _editRoute;
     RouteListModel _routeListModel;
     Routing::Route *_route;
     uint8_t _routeIndex;
-    Routing::Route _editRoute;
+
 };

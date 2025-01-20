@@ -123,12 +123,22 @@ void CurveSequenceEditPage::exit() {
 
 void CurveSequenceEditPage::draw(Canvas &canvas) {
     WindowPainter::clear(canvas);
-    WindowPainter::drawHeader(canvas, _model, _engine, "STEPS");
+
+    /* Prepare flags shown before mode name (top right header) */
+    auto &track = _project.selectedTrack().curveTrack();
+
+    const auto pattern_follow = track.patternFollow();
+    const char* pf_repr = Types::patternFollowShortRepresentation(pattern_follow);
+
+    WindowPainter::drawHeader(canvas, _model, _engine, "STEPS", pf_repr);
+
     WindowPainter::drawActiveFunction(canvas, CurveSequence::layerName(layer()));
     WindowPainter::drawFooter(canvas, functionNames, pageKeyState(), activeFunctionKey());
 
-    const auto &trackEngine = _engine.selectedTrackEngine().as<CurveTrackEngine>();
-    const auto &sequence = _project.selectedCurveSequence();
+    auto &trackEngine = _engine.selectedTrackEngine().as<CurveTrackEngine>();
+    auto &sequence = _project.selectedCurveSequence();
+    int currentStep = trackEngine.isActiveSequence(sequence) ? trackEngine.currentStep() : -1;
+
     bool isActiveSequence = trackEngine.isActiveSequence(sequence);
 
     canvas.setBlendMode(BlendMode::Add);
@@ -142,6 +152,16 @@ void CurveSequenceEditPage::draw(Canvas &canvas) {
     const int bottomY = 48;
 
     bool drawShapeVariation = layer() == Layer::ShapeVariation || layer() == Layer::ShapeVariationProbability;
+
+
+    // Track Pattern Section on the UI
+    if (track.isPatternFollowDisplayOn() && _engine.state().running()) {
+        bool section_change = bool((currentStep) % StepCount == 0); // StepCount is relative to screen
+        int section_no = int((currentStep) / StepCount);
+        if (section_change && section_no != sequence.section()) {
+            sequence.setSecion(section_no);
+        }
+    }
 
     // draw loop points
     canvas.setBlendMode(BlendMode::Set);
@@ -252,7 +272,15 @@ void CurveSequenceEditPage::draw(Canvas &canvas) {
     // draw cursor
     if (isActiveSequence) {
         canvas.setColor(Color::Bright);
-        int x = ((trackEngine.currentStep() - stepOffset) + trackEngine.currentStepFraction()) * stepWidth;
+
+        int x = 0;
+        auto dir = trackEngine.sequenceState().direction();
+        if (dir == 1) {
+            x = ((trackEngine.currentStep() - stepOffset) + trackEngine.currentStepFraction()) * stepWidth;
+        } else if (dir == -1) {
+            x = ((trackEngine.currentStep() + stepOffset)- trackEngine.currentStepFraction()) * stepWidth;
+        }
+
         canvas.vline(x, curveY, curveHeight);
     }
 
@@ -284,9 +312,9 @@ void CurveSequenceEditPage::updateLeds(Leds &leds) {
         leds.set(MatrixMap::fromStep(i), red, green);
     }
 
-    LedPainter::drawSelectedSequenceSection(leds, _section);
+    LedPainter::drawSelectedSequenceSection(leds, sequence.section());
 
-    LedPainter::drawSelectedSequenceSection(leds, _section);
+    LedPainter::drawSelectedSequenceSection(leds, sequence.section());
 
     // show quick edit keys
     if (globalKeyState()[Key::Page] && !globalKeyState()[Key::Shift]) {
@@ -312,6 +340,8 @@ void CurveSequenceEditPage::keyUp(KeyEvent &event) {
 void CurveSequenceEditPage::keyPress(KeyPressEvent &event) {
     const auto &key = event.key();
     auto &sequence = _project.selectedCurveSequence();
+    auto &track = _project.selectedTrack().curveTrack();
+
 
     if (key.isContextMenu()) {
         contextShow();
@@ -320,7 +350,12 @@ void CurveSequenceEditPage::keyPress(KeyPressEvent &event) {
     }
 
     if (key.isQuickEdit()) {
-        quickEdit(key.quickEdit());
+        // XXX Added here, but should we move it to pageModifier structure?
+        if (key.is(Key::Step15)) {
+            track.togglePatternFollowDisplay();
+        } else {
+            quickEdit(key.quickEdit());
+        }
         event.consume();
         return;
     }
@@ -330,6 +365,7 @@ void CurveSequenceEditPage::keyPress(KeyPressEvent &event) {
     }
 
     if (key.isEncoder() && layer() == Layer::Shape && globalKeyState()[Key::Shift] && _stepSelection.count() > 1) {
+        /* original function to "tie" (interpolate) shapes together
         auto firstStep = sequence.step(_stepSelection.firstSetIndex());
         auto lastStep = sequence.step(_stepSelection.lastSetIndex());
         bool isReversed = firstStep.max() > lastStep.max();
@@ -347,6 +383,16 @@ void CurveSequenceEditPage::keyPress(KeyPressEvent &event) {
                 multiStepsProcessed++;
             }
         }
+        */
+
+        // reverse shapes for selected steps
+        for (size_t stepIndex = 0; stepIndex < _stepSelection.size(); ++stepIndex) {
+            if (_stepSelection[stepIndex]) {
+                auto &step = sequence.step(stepIndex);
+                auto reverseShape = Curve::invAt(step.shape());
+                step.setShape(reverseShape);
+            }
+        }
     }
 
     _stepSelection.keyPress(event, stepOffset());
@@ -357,11 +403,17 @@ void CurveSequenceEditPage::keyPress(KeyPressEvent &event) {
         event.consume();
     }
 
+    if (key.isEncoder()) {
+        track.setPatternFollowDisplay(false);
+        event.consume();
+    }
+
     if (key.isLeft()) {
         if (key.shiftModifier()) {
             sequence.shiftSteps(_stepSelection.selected(), -1);
         } else {
-            _section = std::max(0, _section - 1);
+            track.setPatternFollowDisplay(false);
+            sequence.setSecion(std::max(0, sequence.section() - 1));
         }
         event.consume();
     }
@@ -369,7 +421,8 @@ void CurveSequenceEditPage::keyPress(KeyPressEvent &event) {
         if (key.shiftModifier()) {
             sequence.shiftSteps(_stepSelection.selected(), 1);
         } else {
-            _section = std::min(3, _section + 1);
+            track.setPatternFollowDisplay(false);
+            sequence.setSecion(std::min(3, sequence.section() + 1));
         }
         event.consume();
     }
@@ -378,11 +431,30 @@ void CurveSequenceEditPage::keyPress(KeyPressEvent &event) {
 void CurveSequenceEditPage::encoder(EncoderEvent &event) {
     auto &sequence = _project.selectedCurveSequence();
 
-    if (_stepSelection.any()) {
+    if (!_stepSelection.any()) {
+        switch (layer()) {
+        case Layer::Shape:
+            setLayer(event.value() > 0 ? Layer::ShapeVariation : Layer::ShapeVariationProbability);
+            break;
+        case Layer::ShapeVariation:
+            setLayer(event.value() > 0 ? Layer::ShapeVariationProbability : Layer::Shape);
+            break;
+        case Layer::ShapeVariationProbability:
+            setLayer(event.value() > 0 ? Layer::Shape : Layer::ShapeVariation);
+            break;
+        case Layer::Gate:
+            setLayer(Layer::GateProbability);
+            break;
+        case Layer::GateProbability:
+            setLayer(Layer::Gate);
+            break;
+        default:
+            break;
+        }
+        return;
+    } else {
         _showDetail = true;
         _showDetailTicks = os::ticks();
-    } else {
-        return;
     }
 
     for (size_t stepIndex = 0, multiStepsProcessed = 0; stepIndex < sequence.steps().size(); ++stepIndex) {
@@ -577,7 +649,7 @@ void CurveSequenceEditPage::drawDetail(Canvas &canvas, const CurveSequence::Step
         SequencePainter::drawProbability(
             canvas,
             64 + 32 + 8, 32 - 4, 64 - 16, 8,
-            step.gateProbability() + 1, CurveSequence::GateProbability::Range
+            step.gateProbability(), CurveSequence::GateProbability::Range-1
         );
         str.reset();
         str("%.1f%%", 100.f * (step.gateProbability() + 1.f) / CurveSequence::GateProbability::Range);
@@ -649,13 +721,17 @@ void CurveSequenceEditPage::duplicateSequence() {
     showMessage("STEPS DUPLICATED");
 }
 
+
 void CurveSequenceEditPage::generateSequence() {
     _manager.pages().generatorSelect.show([this] (bool success, Generator::Mode mode) {
         if (success) {
             auto builder = _builderContainer.create<CurveSequenceBuilder>(_project.selectedCurveSequence(), layer());
-            auto generator = Generator::execute(mode, *builder);
+            if (_stepSelection.none()) {
+                _stepSelection.selectAll();
+            }
+            auto generator = Generator::execute(mode, *builder, _stepSelection.selected());
             if (generator) {
-                _manager.pages().generator.show(generator);
+                _manager.pages().generator.show(generator, &_stepSelection);
             }
         }
     });

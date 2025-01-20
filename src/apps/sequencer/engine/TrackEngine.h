@@ -36,7 +36,7 @@ public:
         GateUpdate  = (1<<1),
     };
 
-    TrackEngine(Engine &engine, const Model &model, Track &track, const TrackEngine *linkedTrackEngine) :
+    TrackEngine(Engine &engine, Model &model, Track &track, const TrackEngine *linkedTrackEngine) :
         _engine(engine),
         _model(model),
         _track(track),
@@ -101,7 +101,7 @@ public:
 
 protected:
     Engine &_engine;
-    const Model &_model;
+    Model &_model;
     Track &_track;
     const PlayState::TrackState &_trackState;
     const TrackEngine *_linkedTrackEngine;

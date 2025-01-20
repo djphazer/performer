@@ -6,6 +6,7 @@
 #include "ui/model/NoteSequenceListModel.h"
 
 #include "engine/generators/SequenceBuilder.h"
+#include "ui/KeyPressEventTracker.h"
 
 #include "core/utils/Container.h"
 
@@ -30,7 +31,7 @@ private:
 
     static const int StepCount = 16;
 
-    int stepOffset() const { return _section * StepCount; }
+    int stepOffset() const { return _project.selectedNoteSequence().section() * StepCount; }
 
     void switchLayer(int functionKey, bool shift);
     int activeFunctionKey();
@@ -46,6 +47,7 @@ private:
     void copySequence();
     void pasteSequence();
     void duplicateSequence();
+    void tieNotes();
     void generateSequence();
 
     void quickEdit(int index);
@@ -53,16 +55,24 @@ private:
     bool allSelectedStepsActive() const;
     void setSelectedStepsGate(bool gate);
 
+    void setSectionTracking(bool track);
+    bool isSectionTracking();
+    void toggleSectionTracking();
+
     NoteSequence::Layer layer() const { return _project.selectedNoteSequenceLayer(); };
     void setLayer(NoteSequence::Layer layer) { _project.setSelectedNoteSequenceLayer(layer); }
 
-    int _section = 0;
     bool _showDetail;
     uint32_t _showDetailTicks;
+
+    KeyPressEventTracker _keyPressEventTracker;
+
 
     NoteSequenceListModel _listModel;
 
     StepSelection<CONFIG_STEP_COUNT> _stepSelection;
 
     Container<NoteSequenceBuilder> _builderContainer;
+
+    NoteSequence _inMemorySequence;
 };

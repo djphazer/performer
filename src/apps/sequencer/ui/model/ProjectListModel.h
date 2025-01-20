@@ -10,7 +10,11 @@ class ProjectListModel : public RoutableListModel {
 public:
     ProjectListModel(Project &project) :
         _project(project)
-    {}
+    {
+        for (int i = 0; i < 23; ++i) {
+            _scales[i] = i;
+        }
+    }
 
     virtual int rows() const override {
         return Last;
@@ -45,6 +49,21 @@ public:
         }
     }
 
+    void setSelectedScale() {
+        if (_editScale) {
+            _project.editScale(_scales[_selectedScale], false);
+        }
+        _editScale = !_editScale;
+    }
+
+    void initScale() {
+        _selectedScale = 0;
+    }
+
+    void resetScale() {
+        _selectedScale = _project.scale();
+    }
+
 private:
     enum Item {
         Name,
@@ -61,7 +80,11 @@ private:
         MidiIntegrationMode,
         MidiProgramOffset,
         CvGateInput,
-        CurveCvInput,
+        StepsToStop,
+        RecordDelay,
+        ResetCvOnStop,
+        MultiCvRec,
+        //CurveCvInput,
         Last
     };
 
@@ -72,7 +95,6 @@ private:
         case Swing:                 return "Swing";
         case TimeSignature:         return "Time Signature";
         case SyncMeasure:           return "Sync Measure";
-        case AlwaysSync:            return "Sync Patterns";
         case Scale:                 return "Scale";
         case RootNote:              return "Root Note";
         case MonitorMode:           return "Monitor Mode";
@@ -81,7 +103,11 @@ private:
         case MidiIntegrationMode:   return "MIDI Integr.";
         case MidiProgramOffset:     return "MIDI Pgm Off.";
         case CvGateInput:           return "CV/Gate Input";
-        case CurveCvInput:          return "Curve CV Input";
+        case StepsToStop:           return "Steps to stop";
+        case RecordDelay:           return "Record Delay";
+        case ResetCvOnStop:         return "Reset CV";
+        case MultiCvRec:            return "Multi CV rec";
+        //case CurveCvInput:        return "Curve CV Input";
         case Last:                  break;
         }
         return nullptr;
@@ -111,8 +137,10 @@ private:
         case AlwaysSync:
             _project.printAlwaysSyncPatterns(str);
             break;
-        case Scale:
-            _project.printScale(str);
+        case Scale: {
+            auto name = _scales[_selectedScale] < 0 ? "Default" : Scale::name(_scales[_selectedScale]);
+            str(name);
+            }
             break;
         case RootNote:
             _project.printRootNote(str);
@@ -135,9 +163,21 @@ private:
         case CvGateInput:
             _project.printCvGateInput(str);
             break;
-        case CurveCvInput:
-            _project.printCurveCvInput(str);
+        case StepsToStop:
+            _project.printStepsToStop(str);
             break;
+        case RecordDelay:
+            _project.printRecordDelay(str);
+            break;
+        case ResetCvOnStop:
+            _project.printResetCvOnStop(str);
+            break;
+        case MultiCvRec:
+            _project.printUseMultiCvRec(str);
+            break;
+        //case CurveCvInput:
+        //    _project.printCurveCvInput(str);
+        //    break;
         case Last:
             break;
         }
@@ -163,7 +203,7 @@ private:
             _project.editAlwaysSyncPatterns(value, shift);
             break;
         case Scale:
-            _project.editScale(value, shift);
+            _selectedScale = clamp(_selectedScale + value, 0, 23);
             break;
         case RootNote:
             _project.editRootNote(value, shift);
@@ -186,13 +226,30 @@ private:
         case CvGateInput:
             _project.editCvGateInput(value, shift);
             break;
-        case CurveCvInput:
-            _project.editCurveCvInput(value, shift);
+        case StepsToStop:
+            _project.editStepsToStop(value);
             break;
+        case RecordDelay:
+            _project.editRecordDelay(value);
+            break;
+        case ResetCvOnStop:
+            _project.editResetCvOnStop(value);
+            break;
+        case MultiCvRec:
+            _project.editUseMultiCvRec(value);
+            break;
+        //case CurveCvInput:
+        //    _project.editCurveCvInput(value, shift);
+        //    break;
         case Last:
             break;
         }
+
     }
 
     Project &_project;
+    private:
+        std::array<int, 23> _scales;
+        int _selectedScale = 0;
+        bool _editScale = false;
 };

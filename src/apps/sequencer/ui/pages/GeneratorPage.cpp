@@ -1,6 +1,7 @@
 #include "GeneratorPage.h"
 
 #include "ui/painters/WindowPainter.h"
+#include "ui/LedPainter.h"
 
 #include "engine/generators/Generator.h"
 #include "engine/generators/EuclideanGenerator.h"
@@ -27,8 +28,9 @@ GeneratorPage::GeneratorPage(PageManager &manager, PageContext &context) :
     BasePage(manager, context)
 {}
 
-void GeneratorPage::show(Generator *generator) {
+void GeneratorPage::show(Generator *generator, StepSelection<CONFIG_STEP_COUNT> *stepSelection) {
     _generator = generator;
+    _stepSelection = stepSelection;
 
     BasePage::show();
 }
@@ -85,41 +87,71 @@ void GeneratorPage::draw(Canvas &canvas) {
 }
 
 void GeneratorPage::updateLeds(Leds &leds) {
-    // value range
-    for (int i = 0; i < 8; ++i) {
-        bool inRange = (i >= _valueRange.first && i <= _valueRange.second) || (i >= _valueRange.second && i <= _valueRange.first);
-        bool inverted = _valueRange.first > _valueRange.second;
-        leds.set(MatrixMap::toStep(i), inRange && inverted, inRange && !inverted);
+
+    int currentStep;
+    switch (_project.selectedTrack().trackMode()) {
+        case Track::TrackMode::Note: {
+                const auto &trackEngine = _engine.selectedTrackEngine().as<NoteTrackEngine>();
+                const auto &sequence = _project.selectedNoteSequence();
+                currentStep = trackEngine.isActiveSequence(sequence) ? trackEngine.currentStep() : -1;
+                for (int i = 0; i < 16; ++i) {
+                    int stepIndex = stepOffset() + i;
+                    bool red = (stepIndex == currentStep) || (*_stepSelection)[stepIndex];
+                    bool green = (stepIndex != currentStep) && (sequence.step(stepIndex).gate() || (*_stepSelection)[stepIndex]);
+                    leds.set(MatrixMap::fromStep(i), red, green);
+                }
+            }
+            break;
+        case Track::TrackMode::Curve: {
+                const auto &trackEngine = _engine.selectedTrackEngine().as<CurveTrackEngine>();
+                const auto &sequence = _project.selectedCurveSequence();
+                currentStep = trackEngine.isActiveSequence(sequence) ? trackEngine.currentStep() : -1;
+                for (int i = 0; i < 16; ++i) {
+                    int stepIndex = stepOffset() + i;
+                    bool red = (stepIndex == currentStep) || (*_stepSelection)[stepIndex];
+                    bool green = (stepIndex != currentStep) && (sequence.step(stepIndex).gate() || (*_stepSelection)[stepIndex]);
+                    leds.set(MatrixMap::fromStep(i), red, green);
+                }
+            }
+            break;
+        case Track::TrackMode::Stochastic: {
+                const auto &trackEngine = _engine.selectedTrackEngine().as<StochasticEngine>();
+                const auto &sequence = _project.selectedStochasticSequence();
+                currentStep = trackEngine.isActiveSequence(sequence) ? trackEngine.currentStep() : -1;
+                for (int i = 0; i < 12; ++i) {
+                    int stepIndex = stepOffset() + i;
+                    bool red = (stepIndex == currentStep) || (*_stepSelection)[stepIndex];
+                    bool green = (stepIndex != currentStep) && (sequence.step(stepIndex).gate() || (*_stepSelection)[stepIndex]);
+                    leds.set(MatrixMap::fromStep(i), red, green);
+                }
+            }
+            break;
+        case Track::TrackMode::Arp: {
+                const auto &trackEngine = _engine.selectedTrackEngine().as<ArpTrackEngine>();
+                const auto &sequence = _project.selectedArpSequence();
+                currentStep = trackEngine.isActiveSequence(sequence) ? trackEngine.currentStep() : -1;
+                for (int i = 0; i < 12; ++i) {
+                    int stepIndex = stepOffset() + i;
+                    bool red = (stepIndex == currentStep) || (*_stepSelection)[stepIndex];
+                    bool green = (stepIndex != currentStep) && (sequence.step(stepIndex).gate() || (*_stepSelection)[stepIndex]);
+                    leds.set(MatrixMap::fromStep(i), red, green);
+                }
+            }
+            break;
+
+        default:
+            return;
     }
-    for (int i = 0; i < 7; ++i) {
-        leds.set(MatrixMap::toStep(8 + i), false, false);
-    }
+
+
 }
 
 void GeneratorPage::keyDown(KeyEvent &event) {
-    const auto &key = event.key();
-
-    if (key.isGlobal()) {
-        return;
-    }
-
-    if (key.isStep()) {
-    }
-
-    event.consume();
+    _stepSelection->keyDown(event, stepOffset());
 }
 
 void GeneratorPage::keyUp(KeyEvent &event) {
-    const auto &key = event.key();
-
-    if (key.isGlobal()) {
-        return;
-    }
-
-    if (key.isStep()) {
-    }
-
-    event.consume();
+    _stepSelection->keyUp(event, stepOffset());
 }
 
 void GeneratorPage::keyPress(KeyPressEvent &event) {
@@ -135,27 +167,35 @@ void GeneratorPage::keyPress(KeyPressEvent &event) {
         return;
     }
 
-    if (key.isStep()) {
-        int secondStep = key.step();
-        if (secondStep < 8) {
-            int count = 0;
-            int firstStep = -1;
-            for (int step = 0; step < 8; ++step) {
-                if (key.state()[MatrixMap::fromStep(step)]) {
-                    ++count;
-                    if (step != secondStep) {
-                        firstStep = step;
-                    }
-                }
-            }
-            if (count == 2) {
-                _valueRange.first = firstStep;
-                _valueRange.second = secondStep;
-                DBG("range %d %d", firstStep, secondStep);
-            }
+    if (key.isStep() && key.shiftModifier()) {
+        _generator->update();
+        event.consume();
+        return;
+    }
+
+    if (key.isShift() && event.count() == 2) {
+        if (_stepSelection->none()) {
+            _stepSelection->selectAll();
+            _generator->update();
+        } else {
+            _stepSelection->clear();
+            _generator->update();
+            _generator->revert();
         }
 
+        event.consume();
+        return;
     }
+
+    if (key.isLeft()) {
+        _section = std::max(0, _section - 1);
+        event.consume();
+    }
+    if (key.isRight()) {
+        _section = std::min(3, _section + 1);
+        event.consume();
+    }
+
 
     event.consume();
 }
@@ -198,6 +238,9 @@ void GeneratorPage::drawEuclideanGenerator(Canvas &canvas, const EuclideanGenera
 void GeneratorPage::drawRandomGenerator(Canvas &canvas, const RandomGenerator &generator) const {
     const auto &pattern = generator.pattern();
     int steps = pattern.size();
+    if (_project.selectedTrack().trackMode() == Track::TrackMode::Stochastic || _project.selectedTrack().trackMode() == Track::TrackMode::Arp) {
+        steps = 12;
+    }
 
     int stepWidth = Width / steps;
     int stepHeight = 16;
@@ -207,7 +250,11 @@ void GeneratorPage::drawRandomGenerator(Canvas &canvas, const RandomGenerator &g
     for (int i = 0; i < steps; ++i) {
         int h = stepHeight - 2;
         int h2 = (h * pattern[i]) / 255;
-        canvas.setColor(Color::Low);
+        if ( i / 16 == _section ) {
+            canvas.setColor(Color::Medium);
+        } else {
+            canvas.setColor(Color::Low);
+        }
         canvas.drawRect(x + 1, y + 1, stepWidth - 2, h);
         canvas.setColor(Color::Bright);
         canvas.hline(x + 1, y + 1 + h - h2, stepWidth - 2);
@@ -249,14 +296,17 @@ bool GeneratorPage::contextActionEnabled(int index) const {
 }
 
 void GeneratorPage::init() {
+    _stepSelection->clear();
     _generator->init();
 }
 
 void GeneratorPage::revert() {
+    _stepSelection->clear();
     _generator->revert();
     close();
 }
 
 void GeneratorPage::commit() {
+    _stepSelection->clear();
     close();
 }

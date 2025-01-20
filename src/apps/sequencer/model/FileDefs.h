@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Routing.h"
 #include <algorithm>
 
 #include <cstring>
@@ -8,6 +9,10 @@
 enum class FileType : uint8_t {
     Project     = 0,
     UserScale   = 1,
+    NoteSequence= 2,
+    CurveSequence=3,
+    LogicSequence=4,
+    ArpSequence=5,
     Settings    = 255
 };
 

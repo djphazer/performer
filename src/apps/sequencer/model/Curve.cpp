@@ -7,6 +7,90 @@
 static const float Pi = 3.1415926536f;
 static const float TwoPi = 2.f * Pi;
 
+static const Curve::Type INV_SHAPE_MAP[] = {
+    Curve::High,
+    Curve::Low,
+    Curve::RampDown,
+    Curve::RampUp,
+    Curve::rampDownHalf,
+    Curve::rampUpHalf,
+    Curve::doubleRampDownHalf,
+    Curve::doubleRampUpHalf,
+    Curve::ExpDown,
+    Curve::ExpUp,
+    Curve::expDownHalf,
+    Curve:: expUpHalf,
+    Curve::doubleExpDownHalf,
+    Curve::doubleExpUpHalf,
+    Curve::LogDown,
+    Curve::LogUp,
+    Curve::logDownHalf,
+    Curve::logUpHalf,
+    Curve::doubleLogDownHalf,
+    Curve::doubleLogUpHalf,
+    Curve::SmoothDown,
+    Curve::SmoothUp,
+    Curve::smoothDownHalf,
+    Curve::smoothUpHalf,
+    Curve::doubleSmoothDownHalf,
+    Curve::doubleSmoothUpHalf,
+    Curve::RevTriangle,
+    Curve::Triangle,
+    Curve::RevBell,
+    Curve::Bell,
+    Curve::StepDown,
+    Curve::StepUp,
+    Curve::ExpDown2x,
+    Curve::ExpUp2x,
+    Curve::ExpDown3x,
+    Curve::ExpUp3x,
+    Curve::ExpDown4x,
+    Curve::ExpUp4x,
+    Curve::Low,
+};
+
+static const Curve::Type REV_SHAPE_MAP[] = {
+    Curve::Low,
+    Curve::High,
+    Curve::RampDown,
+    Curve::RampUp,
+    Curve::rampDownHalf,
+    Curve::rampUpHalf,
+    Curve::doubleRampDownHalf,
+    Curve::doubleRampUpHalf,
+    Curve::ExpDown,
+    Curve::ExpUp,
+    Curve::expDownHalf,
+    Curve:: expUpHalf,
+    Curve::doubleExpDownHalf,
+    Curve::doubleExpUpHalf,
+    Curve::LogDown,
+    Curve::LogUp,
+    Curve::logDownHalf,
+    Curve::logUpHalf,
+    Curve::doubleLogDownHalf,
+    Curve::doubleLogUpHalf,
+    Curve::SmoothDown,
+    Curve::SmoothUp,
+    Curve::smoothDownHalf,
+    Curve::smoothUpHalf,
+    Curve::doubleSmoothDownHalf,
+    Curve::doubleSmoothUpHalf,
+    Curve::Triangle,
+    Curve::RevTriangle,
+    Curve::Bell,
+    Curve::RevBell,
+    Curve::StepDown,
+    Curve::StepUp,
+    Curve::ExpDown2x,
+    Curve::ExpUp2x,
+    Curve::ExpDown3x,
+    Curve::ExpUp3x,
+    Curve::ExpDown4x,
+    Curve::ExpUp4x,
+    Curve::Low,
+};
+
 static float low(float x) {
     return 0.f;
 }
@@ -83,8 +167,16 @@ static float triangle(float x) {
     return (x < 0.5f ? x : 1.f - x) * 2.f;
 }
 
+static float revTriangle(float x) {
+    return 1.f+(-triangle(x));
+}
+
 static float bell(float x) {
     return 0.5f - 0.5f * std::cos(x * TwoPi);
+}
+
+static float revBell(float x) {
+    return 1.f+-bell(x);
 }
 
 static float stepUp(float x) {
@@ -107,32 +199,94 @@ static float expDown4x(float x) {
     return x < 1.f ? expDown(std::fmod(x * 4.f, 1.f)) : 0.f;
 }
 
+static float expUp2x(float x) {
+    return x < 1.f ? expUp(std::fmod(x * 2.f, 1.f)) : 0.f;
+}
+
+static float expUp3x(float x) {
+    return x < 1.f ? expUp(std::fmod(x * 3.f, 1.f)) : 0.f;
+}
+
+static float expUp4x(float x) {
+    return x < 1.f ? expUp(std::fmod(x * 4.f, 1.f)) : 0.f;
+}
+
+static float doubleRampUpHalf(float x) {
+    return x < 0.5f ? rampUp(std::fmod(x * 2.f, 1.f)) : rampUp(std::fmod(x * 2.f, 1.f));
+}
+
+static float doubleRampDownHalf(float x) {
+    return x < 0.5f ? rampDown(std::fmod(x * 2.f, 1.f)) : x < 1.f ? rampDown(std::fmod(x * 2.f, 1.f)) : 0.f;
+}
+
+static float doubleExpUpHalf(float x) {
+    return x < 0.5f ? expUp(std::fmod(x * 2.f, 1.f)) : expUp(std::fmod(x * 2.f, 1.f));
+}
+
+static float doubleExpDownHalf(float x) {
+    return x < 0.5f ? expDown(std::fmod(x * 2.f, 1.f)) : x < 1.f ?  expDown(std::fmod(x * 2.f, 1.f)) : 0.f;
+}
+
+static float doubleLogUpHalf(float x) {
+    return x < 0.5f ? logUp(std::fmod(x * 2.f, 1.f)) : logUp(std::fmod(x * 2.f, 1.f));
+}
+
+static float doubleLogDownHalf(float x) {
+    return x < 0.5f ? logDown(std::fmod(x * 2.f, 1.f)) : x < 1.f ? logDown(std::fmod(x * 2.f, 1.f)) : 0.f;
+}
+
+static float doubleSmoothUpHalf(float x) {
+    return x < 0.5f ? smoothUp(std::fmod(x * 2.f, 1.f)) : smoothUp(std::fmod(x * 2.f, 1.f));
+}
+
+static float doubleSmoothDownHalf(float x) {
+    return x < 0.5f ? smoothDown(std::fmod(x * 2.f, 1.f)) : x < 1.f ? smoothDown(std::fmod(x * 2.f, 1.f)) : 0.f;
+}
+
+static float trigger(float x) {
+    return x < 0.1f ? 1.f : x < 0.3f ? expDown(std::fmod(x * 2.f, 1.f)) : 0.f;
+}
+
 static Curve::Function functions[] = {
-        &low,
-        &high,
-        &rampUp,
-        &rampDown,
-        &expUp,
-        &expDown,
-        &logUp,
-        &logDown,
-        &smoothUp,
-        &smoothDown,
-        &rampUpHalf,
-        &rampDownHalf,
-        &expUpHalf,
-        &expDownHalf,
-        &logUpHalf,
-        &logDownHalf,
-        &smoothUpHalf,
-        &smoothDownHalf,
-        &triangle,
-        &bell,
-        &stepUp,
-        &stepDown,
-        &expDown2x,
-        &expDown3x,
-        &expDown4x,
+    &low,
+    &high,
+    &stepUp,
+    &stepDown,
+    &rampUp,
+    &rampDown,
+    &rampUpHalf,
+    &rampDownHalf,
+    &doubleRampUpHalf,
+    &doubleRampDownHalf,
+    &expUp,
+    &expDown,
+    &expUpHalf,
+    &expDownHalf,
+    &doubleExpUpHalf,
+    &doubleExpDownHalf,
+    &logUp,
+    &logDown,
+    &logUpHalf,
+    &logDownHalf,
+    &doubleLogUpHalf,
+    &doubleLogDownHalf,
+    &smoothUp,
+    &smoothDown,
+    &smoothUpHalf,
+    &smoothDownHalf,
+    &doubleSmoothUpHalf,
+    &doubleSmoothDownHalf,
+    &triangle,
+    &revTriangle,
+    &bell,
+    &revBell,
+    &expDown2x,
+    &expUp2x,
+    &expDown3x,
+    &expUp3x,
+    &expDown4x,
+    &expUp4x,
+    &trigger
 };
 
 Curve::Function Curve::function(Type type) {
@@ -141,4 +295,12 @@ Curve::Function Curve::function(Type type) {
 
 float Curve::eval(Type type, float x) {
     return functions[type](x);
+}
+
+Curve::Type Curve::invAt(int i) {
+    return INV_SHAPE_MAP[i];
+}
+
+Curve::Type Curve::revAt(int i) {
+    return REV_SHAPE_MAP[i];
 }

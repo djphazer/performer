@@ -11,6 +11,10 @@
 #define SettingScreensaver "screensaver"
 #define SettingWakeMode "wakemode"
 #define SettingDimSequence "dimsequence"
+#define SettingLaunchpadStyle "lpstyle"
+#define SettingPatternChange "patternchg"
+#define SettingLaunchpadNoteStyle "lpnote"
+#define SettingSyncSong "syncsong"
 
 class BaseSetting {
 public:
@@ -115,8 +119,8 @@ public:
     ScreensaverSetting() : Setting(
             SettingScreensaver,
             "Screensaver",
-            {"off", "3s", "5s", "10s", "30s", "1m", "10m", "30m"},
-            {0, 3000,  5000,  10000, 30000, 60000, 600000, 1800000},
+            {"off", "3s", "5s", "10s", "30s", "1m", "5m", "10m", "30m"},
+            {0, 3000,  5000,  10000, 30000, 60000, 300000, 600000, 1800000},
             0
     ) {}
 };
@@ -143,6 +147,50 @@ public:
     ) {}
 };
 
+class LaunchpadStyleSetting : public Setting<int> {
+    public:
+    LaunchpadStyleSetting() : Setting(
+        SettingLaunchpadStyle,
+        "LP Style",
+        {"Classic", "Blue"},
+        {0, 1},
+        0
+    ) {}
+};
+
+class PatternChange : public Setting<int> {
+    public:
+    PatternChange() : Setting(
+        SettingPatternChange,
+        "Pattern Change",
+        {"Immediate", "Sync"},
+        {0, 1},
+        0
+    ) {}
+};
+
+class LaunchpadNoteStyle : public Setting<int> {
+    public:
+    LaunchpadNoteStyle() : Setting(
+        SettingLaunchpadNoteStyle,
+        "LP Note Style",
+        {"Classic", "Circuit"},
+        {0, 1},
+        1
+    ) {}
+};
+
+class SyncSong : public Setting<int> {
+    public:
+    SyncSong() : Setting(
+        SettingSyncSong,
+        "Sync song",
+        {"Yes", "No"},
+        {1, 0},
+        0
+    ) {}
+};
+
 class UserSettings {
 public:
     UserSettings() {
@@ -150,6 +198,13 @@ public:
         addSetting(new ScreensaverSetting());
         addSetting(new WakeModeSetting());
         addSetting(new DimSequenceSetting());
+        
+        addSetting(new PatternChange());
+        
+        addSetting(new SyncSong());
+
+        addSetting(new LaunchpadStyleSetting());
+        addSetting(new LaunchpadNoteStyle());
     }
 
     //----------------------------------------
@@ -168,6 +223,7 @@ public:
     void read(VersionedSerializedReader &reader);
 
 private:
+//protected: // mebitek
     std::vector<BaseSetting *> _settings;
 
     template<typename T>

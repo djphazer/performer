@@ -215,6 +215,33 @@ void Routing::writeTarget(Target target, uint8_t tracks, float normalized) {
                         track.midiCvTrack().writeRouted(target, intValue, floatValue);
                     }
                     break;
+                case Track::TrackMode::Stochastic:
+                    if (isTrackTarget(target)) {
+                        track.stochasticTrack().writeRouted(target, intValue, floatValue);
+                    } else {
+                        for (int patternIndex = 0; patternIndex < CONFIG_PATTERN_COUNT; ++patternIndex) {
+                            track.stochasticTrack().sequence(patternIndex).writeRouted(target, intValue, floatValue);
+                        }
+                    }
+                    break;
+                case Track::TrackMode::Logic:
+                    if (isTrackTarget(target)) {
+                        track.logicTrack().writeRouted(target, intValue, floatValue);
+                    } else {
+                        for (int patternIndex = 0; patternIndex < CONFIG_PATTERN_COUNT; ++patternIndex) {
+                            track.logicTrack().sequence(patternIndex).writeRouted(target, intValue, floatValue);
+                        }
+                    }
+                    break;
+                case Track::TrackMode::Arp:
+                    if (isTrackTarget(target)) {
+                        track.arpTrack().writeRouted(target, intValue, floatValue);
+                    } else {
+                        for (int patternIndex = 0; patternIndex < CONFIG_PATTERN_COUNT; ++patternIndex) {
+                            track.arpTrack().sequence(patternIndex).writeRouted(target, intValue, floatValue);
+                        }
+                    }
+                    break;                   
                 case Track::TrackMode::Last:
                     break;
                 }
@@ -300,6 +327,8 @@ static const TargetInfo targetInfos[int(Routing::Target::Last)] = {
     [int(Routing::Target::LengthBias)]                      = { -8,     8,      -8,     8,      8       },
     [int(Routing::Target::NoteProbabilityBias)]             = { -8,     8,      -8,     8,      8       },
     [int(Routing::Target::ShapeProbabilityBias)]            = { -8,     8,      -8,     8,      8       },
+    [int(Routing::Target::CurveMin)]                        = { 0,      255,    0,      255,    1       },
+    [int(Routing::Target::CurveMax)]                        = { 0,      255,    0,      255,    1       },
     // Sequence targets
     [int(Routing::Target::FirstStep)]                       = { 0,      63,     0,      63,     16      },
     [int(Routing::Target::LastStep)]                        = { 0,      63,     0,      63,     16      },
@@ -307,6 +336,17 @@ static const TargetInfo targetInfos[int(Routing::Target::Last)] = {
     [int(Routing::Target::Divisor)]                         = { 1,      768,    6,      24,     1       },
     [int(Routing::Target::Scale)]                           = { 0,      23,     0,      23,     1       },
     [int(Routing::Target::RootNote)]                        = { 0,      11,     0,      11,     1       },
+    [int(Routing::Target::CurrentRecordStep)]               = { 0,      63,     0,      63,     16      },
+
+    [int(Routing::Target::Reseed)]                          = { 0,      1,      0,      1,      1       },
+    [int(Routing::Target::RestProbability2)]                = { -8,     8,      -8,     8,      8       },
+    [int(Routing::Target::RestProbability4)]                = { -8,     8,      -8,     8,      8       },
+    [int(Routing::Target::RestProbability8)]                = { -8,     8,      -8,     8,      8       },
+    [int(Routing::Target::SequenceFirstStep)]               = { 0,      63,     1,      63,     16      },
+    [int(Routing::Target::SequenceLastStep)]                = { 0,      63,     0,      63,     16      },
+    [int(Routing::Target::LowOctaveRange)]                  = {-10,     10,     -1,     1,      1       },
+    [int(Routing::Target::HighOctaveRange)]                 = {-10,     10,     -1,     1,      1       },
+    [int(Routing::Target::LengthModifier)]                  = { -8,     8,      -8,     8,      8       },
 };
 
 float Routing::normalizeTargetValue(Routing::Target target, float value) {
@@ -347,6 +387,8 @@ void Routing::printTargetValue(Routing::Target target, float normalized, StringB
     case Target::Octave:
     case Target::Transpose:
     case Target::Rotate:
+    case Target::LowOctaveRange:
+    case Target::HighOctaveRange:
         str("%+d", intValue);
         break;
     case Target::Offset:
@@ -357,6 +399,12 @@ void Routing::printTargetValue(Routing::Target target, float normalized, StringB
     case Target::LengthBias:
     case Target::NoteProbabilityBias:
     case Target::ShapeProbabilityBias:
+    case Target::RestProbability2:
+    case Target::RestProbability4:
+    case Target::RestProbability8:
+    case Target::SequenceFirstStep:
+    case Target::SequenceLastStep:
+    case Target::LengthModifier:
         str("%+.1f%%", value * 12.5f);
         break;
     case Target::Divisor:

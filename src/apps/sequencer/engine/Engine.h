@@ -12,6 +12,9 @@
 #include "CvOutput.h"
 #include "RoutingEngine.h"
 #include "MidiOutputEngine.h"
+#include "StochasticEngine.h"
+#include "LogicTrackEngine.h"
+#include "ArpTrackEngine.h"
 #include "MidiPort.h"
 #include "MidiLearn.h"
 #include "CvGateToMidiConverter.h"
@@ -33,7 +36,7 @@
 
 class Engine : private Clock::Listener {
 public:
-    using TrackEngineContainer = Container<NoteTrackEngine, CurveTrackEngine, MidiCvTrackEngine>;
+    using TrackEngineContainer = Container<NoteTrackEngine, CurveTrackEngine, MidiCvTrackEngine, StochasticEngine, LogicTrackEngine, ArpTrackEngine>;
     using TrackEngineContainerArray = std::array<TrackEngineContainer, CONFIG_TRACK_COUNT>;
     using TrackEngineArray = std::array<TrackEngine *, CONFIG_TRACK_COUNT>;
     using TrackUpdateReducerArray = std::array<UpdateReducer<os::time::ms(25)>, CONFIG_TRACK_COUNT>;
@@ -81,6 +84,10 @@ public:
     void clockContinue();
     void clockReset();
     bool clockRunning() const;
+
+    // song control
+    void startSong();
+    void stopSong();
 
     // recording
     void toggleRecording();
@@ -160,6 +167,9 @@ public:
 
     Stats stats() const;
 
+     bool isLaunchpadConnected();
+
+
 private:
     // Clock::Listener
     virtual void onClockOutput(const Clock::OutputState &state) override;
@@ -173,7 +183,7 @@ private:
 
     void usbMidiConnect(uint16_t vendorId, uint16_t productId);
     void usbMidiDisconnect();
-
+   
     void receiveMidi();
     void receiveMidi(MidiPort port, uint8_t cable, const MidiMessage &message);
     void monitorMidi(const MidiMessage &message);
@@ -269,4 +279,6 @@ private:
     std::array<float, CvOutput::Channels> _cvOutputOverrideValues;
 
     MessageHandler _messageHandler;
+
+    bool _deviceConnected = false;
 };

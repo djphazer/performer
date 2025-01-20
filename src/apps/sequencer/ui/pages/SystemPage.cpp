@@ -243,6 +243,11 @@ void SystemPage::setMode(Mode mode) {
         setListModel(_utilitiesListModel);
         break;
     case Mode::Settings:
+        if (_engine.isLaunchpadConnected()) {
+            _settingsListModel.setIsLaunchopad(true);
+        } else {
+            _settingsListModel.setIsLaunchopad(false);
+        }
         setListModel(_settingsListModel);
         break;
     default:

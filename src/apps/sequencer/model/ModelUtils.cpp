@@ -76,6 +76,21 @@ void printDivisor(StringBuilder &str, int value) {
     str("%d", value);
 }
 
+void printDivisorAbbr(StringBuilder &str, int value) {
+    for (int i = 0; i < numKnownDivisors; ++i) {
+        const auto &knownDivisor = knownDivisors[i];
+        if (value == knownDivisor.divisor) {
+            if (knownDivisor.denominator == 1) {
+                str("%d%c", knownDivisor.numerator, knownDivisor.type);
+            } else {
+                str("%d/%d%c", knownDivisor.numerator, knownDivisor.denominator, knownDivisor.type);
+            }
+            return;
+        }
+    }
+    str("%d", value);
+}
+
 int divisorToIndex(int divisor) {
     for (int i = 0; i < numKnownDivisors; ++i) {
         const auto &knownDivisor = knownDivisors[i];

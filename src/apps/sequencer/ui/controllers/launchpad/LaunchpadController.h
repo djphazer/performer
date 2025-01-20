@@ -94,24 +94,48 @@ private:
     void sequenceDraw();
     void sequenceButton(const Button &button, ButtonAction action);
 
+    bool isNoteKeyboardPressed(const Scale &scale);
+
     void sequenceUpdateNavigation();
 
     void sequenceSetLayer(int row, int col);
     void sequenceSetFirstStep(int step);
     void sequenceSetLastStep(int step);
     void sequenceSetRunMode(int mode);
+    void sequenceSetRests(Button btton);
+    void sequenceSetFollowMode(int col);
     void sequenceToggleStep(int row, int col);
     void sequenceToggleNoteStep(int row, int col);
+    void sequenceToggleLogicStep(int row, int col);
     void sequenceEditStep(int row, int col);
     void sequenceEditNoteStep(int row, int col);
     void sequenceEditCurveStep(int row, int col);
+    void sequenceEditStochasticStep(int row, int col);
+    void sequenceEditLogicStep(int row, int col);
+    void sequenceEditArpStep(int row, int col);
+
 
     void sequenceDrawLayer();
     void sequenceDrawStepRange(int highlight);
+    void stochasticDrawRestProbability();
+    void arpDrawRestProbability();
     void sequenceDrawRunMode();
+    void sequenceDrawFollowMode();
     void sequenceDrawSequence();
     void sequenceDrawNoteSequence();
     void sequenceDrawCurveSequence();
+    void sequenceDrawStochasticSequence();
+    void sequenceDrawLogicSequence();
+    void sequenceDrawArpSequence();
+
+
+    void manageCircuitKeyboard(const Button &button);
+    void manageStochasticCircuitKeyboard(const Button &button);
+    void manageArpCircuitKeyboard(const Button &button);
+    void drawRunningKeyboardCircuit(int row, int col, const NoteSequence::Step &step, const Scale &scale, int rootNote);
+    void drawRunningStochasticKeyboardCircuit(int row, int col, const StochasticSequence::Step &step, const Scale &scale, int rootNote);
+    void drawRunningArpKeyboardCircuit(int row, int col, const ArpSequence::Step &step, const Scale &scale, int rootNote);
+
 
     // Pattern mode
     void patternEnter();
@@ -124,10 +148,14 @@ private:
     void performerExit();
     void performerDraw();
     void performerButton(const Button &button, ButtonAction action);
+    void performDrawLayer();
+    void performSetLayer(int row, int col);
 
     // Navigation
     void navigationDraw(const Navigation &navigation);
     void navigationButtonDown(Navigation &navigation, const Button &button);
+    void performNavigationButtonDown(Navigation &navigation, const Button &button);
+
 
     // Drawing
     void drawTracksGateAndSelected(const Engine &engine, int selectedTrack);
@@ -144,22 +172,67 @@ private:
     void drawNoteSequenceNotes(const NoteSequence &sequence, NoteSequence::Layer layer, int currentStep);
     void drawCurveSequenceBars(const CurveSequence &sequence, CurveSequence::Layer layer, int currentStep);
     void drawCurveSequenceDots(const CurveSequence &sequence, CurveSequence::Layer layer, int currentStep);
+
+    void drawStochasticSequenceBits(const StochasticSequence &sequence, StochasticSequence::Layer layer, int currentStep);
+    void drawStochasticSequenceBars(const StochasticSequence &sequence, StochasticSequence::Layer layer, int currentStep);
+    void drawStochasticSequenceNotes(const StochasticSequence &sequence, StochasticSequence::Layer layer, int currentStep);
+    void drawStochasticSequenceDots(const StochasticSequence &sequence, StochasticSequence::Layer layer, int currentStep);
+
+    void drawLogicSequenceBits(const LogicSequence &sequence, LogicSequence::Layer layer, int currentStep);
+    void drawLogicSequenceBars(const LogicSequence &sequence, LogicSequence::Layer layer, int currentStep);
+    void drawLogicSequenceNotes(const LogicSequence &sequence, LogicSequence::Layer layer, int currentStep);
+    void drawLogicSequenceDots(const LogicSequence &sequence, LogicSequence::Layer layer, int currentStep);
+
+    void drawArpSequenceBits(const ArpSequence &sequence, ArpSequence::Layer layer, int currentStep);
+    void drawArpSequenceBars(const ArpSequence &sequence, ArpSequence::Layer layer, int currentStep);
+    void drawArpSequenceNotes(const ArpSequence &sequence, ArpSequence::Layer layer, int currentStep);
+    void drawArpSequenceDots(const ArpSequence &sequence, ArpSequence::Layer layer, int currentStep);
+
+
+    void drawBar(int row, int amount) {
+        for (int i = 0; i < 8; ++i) {
+            int p = amount;
+            if (i<p) {
+                setGridLed(row, i, colorYellow());    
+            } else if (i==p && p != 0) {
+                setGridLed(row, i, colorGreen());
+            } else {
+                setGridLed(row, i, colorOff());
+            }
+        } 
+        if (amount>7) {
+            for (int i = 0; i < 8; ++i) {
+            int p = amount-8;
+            if (i<p) {
+                setGridLed(row+1, i, colorYellow());    
+            } else if (i==p) {
+                setGridLed(row+1, i, colorGreen());
+            } else {
+                setGridLed(row+1, i, colorOff());
+            }
+        } 
+        }
+    }
+
+    void followModeAction(int currentStep, int);
     void drawBar(int row, int value, bool active, bool current);
+    void drawBarH(int row, int value, bool active, bool current);
 
     // Led handling
     void setGridLed(int row, int col, Color color);
+    void setCustomGridLed(int row, int col, Color color);
     void setGridLed(int index, Color color);
     void setFunctionLed(int col, Color color);
     void setSceneLed(int col, Color color);
 
     template<typename T>
-    void setButtonLed(Color color) {
-        _device->setLed(T::row, T::col, color);
+    void setButtonLed(Color color, int style) {
+        _device->setLed(T::row, T::col, color, style);
     }
 
     template<typename T>
-    void mirrorButton() {
-        setButtonLed<T>(buttonState(T::row, T::col) ? color(true, true) : color(false, false));
+    void mirrorButton(int style) {
+        setButtonLed<T>(buttonState(T::row, T::col) ? color(true, true) : color(false, false), style);
     }
 
     // Button handling
@@ -173,13 +246,27 @@ private:
         return buttonState(T::row, T::col);
     }
 
+    inline const int getMapValue(const std::unordered_map<int, int> map, int index) {
+        return map.find(index) != map.end() ? map.at(index) : -1;
+    }
+
     struct {
         Button lastButton;
         uint32_t lastTicks = 0;
         uint8_t count = 1;
     } _buttonTracker;
 
+    struct {
+        Button firstStepButton;
+        Button lastStepButton;
+    } _performButton;
+
+
+    int _startingFirstStep[8];
+    int _startingLastStep[8];
+
     Project &_project;
+    
     Container<LaunchpadDevice, LaunchpadMk2Device, LaunchpadMk3Device, LaunchpadProDevice, LaunchpadProMk3Device> _deviceContainer;
     LaunchpadDevice *_device;
     Mode _mode = Mode::Sequence;
@@ -191,4 +278,12 @@ private:
     struct {
         Navigation navigation = { 0, 0, 0, 0, -1, 0 };
     } _pattern;
+
+    struct {
+        Navigation navigation = { 0, 0, 0, 7,0,0};
+    } _performNavigation;
+
+    int _performSelectedLayer = 0;
+
+    bool _performFollowMode = false;
 };

@@ -23,6 +23,9 @@ public:
     {}
 
     virtual bool isChromatic() const = 0;
+    virtual bool isNotePresent(int note) const = 0;
+    virtual int getNoteIndex(int note) const = 0;
+    virtual int noteIndex(int note, int rootNote) const = 0;
 
     virtual void noteName(StringBuilder &str, int note, int rootNote, Format format = Long) const = 0;
     virtual float noteToVolts(int note) const = 0;
@@ -33,6 +36,12 @@ public:
     static int Count;
     static const Scale &get(int index);
     static const char *name(int index);
+
+    bool operator==(const Scale& rhs) const
+    {
+        return (_displayName == rhs._displayName);
+    
+    }
 
 private:
     const char *displayName() const { return _displayName; }
@@ -53,6 +62,30 @@ public:
 
     bool isChromatic() const override {
         return _chromatic;
+    }
+
+    bool isNotePresent(int note) const override {
+        if (note >= 12) {
+            note = note -12;
+        }
+        for (int i = 0; i < _noteCount; i++) {
+            if (_notes[i] == note * 128) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    int getNoteIndex(int note) const override {
+        if (note >= 12) {
+            note = note - 12;
+        }
+         for (int i = 0; i < _noteCount; i++) {
+            if (_notes[i] == note * 128) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     void noteName(StringBuilder &str, int note, int rootNote, Format format) const override {
@@ -83,6 +116,21 @@ public:
         if (printOctave) {
             str("%+d", octave);
         }
+    }
+
+    int noteIndex(int note, int rootNote) const override {
+        int octave = roundDownDivide(note, _noteCount);
+        int noteIndex = 0;
+        if (isChromatic()) {
+            noteIndex = _notes[note - octave * _noteCount] / 128 + rootNote;
+            while (noteIndex >= 12) {
+                noteIndex -= 12;
+                octave += 1;
+            }
+        } else {
+            noteIndex = note - octave * _noteCount + 1;
+        }
+        return noteIndex;
     }
 
     float noteToVolts(int note) const override {
@@ -132,6 +180,18 @@ public:
 
     bool isChromatic() const override {
         return false;
+    }
+
+    bool isNotePresent(int note) const override{
+        return true;
+    }
+
+    int getNoteIndex(int note) const override {
+        return -1;
+    }
+
+    int noteIndex(int note, int rootNote) const override {
+        return -1;
     }
 
     void noteName(StringBuilder &str, int note, int rootNote, Format format) const override {

@@ -5,11 +5,12 @@
 #include "SortedQueue.h"
 #include "Groove.h"
 #include "RecordHistory.h"
+#include "model/NoteSequence.h"
 #include "StepRecorder.h"
 
 class NoteTrackEngine : public TrackEngine {
 public:
-    NoteTrackEngine(Engine &engine, const Model &model, Track &track, const TrackEngine *linkedTrackEngine) :
+    NoteTrackEngine(Engine &engine, Model &model, Track &track, const TrackEngine *linkedTrackEngine) :
         TrackEngine(engine, model, track, linkedTrackEngine),
         _noteTrack(track.noteTrack())
     {
@@ -42,10 +43,21 @@ public:
 
     int currentStep() const { return _currentStep; }
     int currentRecordStep() const { return _stepRecorder.stepIndex(); }
+    void setCurrentRecordStep(int value) {
+        _stepRecorder.setStepIndex(value);
+    }
 
     void setMonitorStep(int index);
 
+    Types::PlayMode playMode() const { return _noteTrack.playMode(); }
+
+    SequenceState sequenceState() {
+        return _sequenceState;
+    }
+
+
 private:
+    void triggerStep(uint32_t tick, uint32_t divisor, bool nextStep);
     void triggerStep(uint32_t tick, uint32_t divisor);
     void recordStep(uint32_t tick, uint32_t divisor);
     int noteFromMidiNote(uint8_t midiNote) const;
@@ -77,6 +89,7 @@ private:
     float _cvOutput;
     float _cvOutputTarget;
     bool _slideActive;
+    unsigned int _currentStageRepeat;
 
     struct Gate {
         uint32_t tick;

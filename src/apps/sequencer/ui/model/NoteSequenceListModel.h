@@ -10,6 +10,7 @@
 class NoteSequenceListModel : public RoutableListModel {
 public:
     enum Item {
+        Name,
         FirstStep,
         LastStep,
         RunMode,
@@ -21,10 +22,23 @@ public:
     };
 
     NoteSequenceListModel()
-    {}
+    {
+        _scales[0] = -1;
+        for (int i = 1; i < 23; ++i) {
+            _scales[i] = i-1;
+        }
+
+        for (int i = 0; i < 8; ++i) {
+            _selectedScale[i] = 0;
+        }
+    }
 
     void setSequence(NoteSequence *sequence) {
         _sequence = sequence;
+        if (sequence != nullptr) {
+            int trackIndex = _sequence->trackIndex();
+            _selectedScale[trackIndex] = sequence->scale()+1;
+        }
     }
 
     virtual int rows() const override {
@@ -82,9 +96,17 @@ public:
         }
     }
 
+    void setSelectedScale(int defaultScale, bool force = false) override {
+        if (_editScale || force) {
+            _sequence->editScale(_scales[_selectedScale[_sequence->trackIndex()]], false, defaultScale);
+        }
+        _editScale = !_editScale;
+    }
+
 private:
     static const char *itemName(Item item) {
         switch (item) {
+        case Name:              return "Name";
         case FirstStep:         return "First Step";
         case LastStep:          return "Last Step";
         case RunMode:           return "Run Mode";
@@ -103,6 +125,9 @@ private:
 
     void formatValue(Item item, StringBuilder &str) const {
         switch (item) {
+        case Name:
+             str(_sequence->name());
+             break;
         case FirstStep:
             _sequence->printFirstStep(str);
             break;
@@ -118,8 +143,16 @@ private:
         case ResetMeasure:
             _sequence->printResetMeasure(str);
             break;
-        case Scale:
-            _sequence->printScale(str);
+        case Scale: {
+                int trackIndex = _sequence->trackIndex();
+                bool isRouted = Routing::isRouted(Routing::Target::Scale, trackIndex);
+                if (isRouted) {
+                    _sequence->printScale(str);
+                } else {
+                    auto name = _scales[_selectedScale[trackIndex]] < 0 ? "Default" : Scale::name(_scales[_selectedScale[trackIndex]]);
+                    str(name);
+                }
+            }
             break;
         case RootNote:
             _sequence->printRootNote(str);
@@ -131,6 +164,8 @@ private:
 
     void editValue(Item item, int value, bool shift) {
         switch (item) {
+        case Name:
+            break;
         case FirstStep:
             _sequence->editFirstStep(value, shift);
             break;
@@ -146,8 +181,14 @@ private:
         case ResetMeasure:
             _sequence->editResetMeasure(value, shift);
             break;
-        case Scale:
-            _sequence->editScale(value, shift);
+        case Scale: {
+                int trackIndex = _sequence->trackIndex();
+                bool isRouted = Routing::isRouted(Routing::Target::Scale, trackIndex);
+                if (!isRouted) {
+                    int trackIndex = _sequence->trackIndex();
+                    _selectedScale[trackIndex] = clamp(_selectedScale[trackIndex] + value, 0, 23);
+                }
+            }
             break;
         case RootNote:
             _sequence->editRootNote(value, shift);
@@ -159,6 +200,8 @@ private:
 
     int indexedCountValue(Item item) const {
         switch (item) {
+        case Name:
+            break;
         case FirstStep:
         case LastStep:
             return 16;
@@ -179,6 +222,8 @@ private:
 
     int indexedValue(Item item) const {
         switch (item) {
+        case Name:
+            break;
         case FirstStep:
             return _sequence->firstStep();
         case LastStep:
@@ -201,6 +246,8 @@ private:
 
     void setIndexedValue(Item item, int index) {
         switch (item) {
+        case Name:
+            break;
         case FirstStep:
             return _sequence->setFirstStep(index);
         case LastStep:
@@ -221,4 +268,8 @@ private:
     }
 
     NoteSequence *_sequence;
+    private:
+        std::array<int, 23> _scales;
+        std::array<int, 8> _selectedScale;
+        bool _editScale = false;
 };

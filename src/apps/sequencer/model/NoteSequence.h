@@ -7,9 +7,12 @@
 #include "Types.h"
 #include "Scale.h"
 #include "Routing.h"
+#include "FileDefs.h"
+#include "os/os.h"
 
 #include "core/math/Math.h"
 #include "core/utils/StringBuilder.h"
+#include "core/utils/StringUtils.h"
 
 #include <array>
 #include <bitset>
@@ -22,17 +25,19 @@ public:
     // Types
     //----------------------------------------
 
-    using GateProbability = UnsignedValue<3>;
+    using GateProbability = UnsignedValue<4>;
     using GateOffset = SignedValue<4>;
-    using Retrigger = UnsignedValue<2>;
-    using RetriggerProbability = UnsignedValue<3>;
-    using Length = UnsignedValue<3>;
+    using Retrigger = UnsignedValue<3>;
+    using RetriggerProbability = UnsignedValue<4>;
+    using Length = UnsignedValue<4>;
     using LengthVariationRange = SignedValue<4>;
-    using LengthVariationProbability = UnsignedValue<3>;
+    using LengthVariationProbability = UnsignedValue<4>;
     using Note = SignedValue<7>;
     using NoteVariationRange = SignedValue<7>;
-    using NoteVariationProbability = UnsignedValue<3>;
+    using NoteVariationProbability = UnsignedValue<4>;
     using Condition = UnsignedValue<7>;
+    using StageRepeats = UnsignedValue<3>;
+    using StageRepeatsMode = UnsignedValue<3>;
 
     static_assert(int(Types::Condition::Last) <= Condition::Max + 1, "Condition enum does not fit");
 
@@ -40,15 +45,18 @@ public:
         Gate,
         GateProbability,
         GateOffset,
-        Slide,
         Retrigger,
         RetriggerProbability,
+        StageRepeats,
+        StageRepeatsMode,
         Length,
         LengthVariationRange,
         LengthVariationProbability,
         Note,
         NoteVariationRange,
         NoteVariationProbability,
+        Slide,
+        BypassScale,
         Condition,
         Last
     };
@@ -59,6 +67,7 @@ public:
         case Layer::GateProbability:            return "GATE PROB";
         case Layer::GateOffset:                 return "GATE OFFSET";
         case Layer::Slide:                      return "SLIDE";
+        case Layer::BypassScale:                 return "BYPASS SCALE";
         case Layer::Retrigger:                  return "RETRIG";
         case Layer::RetriggerProbability:       return "RETRIG PROB";
         case Layer::Length:                     return "LENGTH";
@@ -68,6 +77,8 @@ public:
         case Layer::NoteVariationRange:         return "NOTE RANGE";
         case Layer::NoteVariationProbability:   return "NOTE PROB";
         case Layer::Condition:                  return "CONDITION";
+        case Layer::StageRepeats:               return "REPEAT";
+        case Layer::StageRepeatsMode:           return "REPEAT MODE";
         case Layer::Last:                       break;
         }
         return nullptr;
@@ -76,11 +87,30 @@ public:
     static Types::LayerRange layerRange(Layer layer);
     static int layerDefaultValue(Layer layer);
 
+    static constexpr size_t NameLength = FileHeader::NameLength;
+
+
     class Step {
+
     public:
         //----------------------------------------
         // Properties
         //----------------------------------------
+
+        // stage
+        void setStageRepeats(int repeats) {
+            _data1.stageRepeats = StageRepeats::clamp(repeats);
+        }
+        unsigned int stageRepeats() const { return _data1.stageRepeats; }
+
+        void setStageRepeatsMode(Types::StageRepeatMode mode) {
+            _data1.stageRepeatMode = mode;
+        }
+
+        Types::StageRepeatMode stageRepeatMode() const {
+            int value = _data1.stageRepeatMode;
+            return static_cast<Types::StageRepeatMode>(value);
+        }
 
         // gate
 
@@ -90,17 +120,16 @@ public:
 
         // gateProbability
 
-        int gateProbability() const { return _data0.gateProbability; }
+        int gateProbability() const { return _data1.gateProbability; }
         void setGateProbability(int gateProbability) {
-            _data0.gateProbability = GateProbability::clamp(gateProbability);
+            _data1.gateProbability = GateProbability::clamp(gateProbability);
         }
 
         // gateOffset
 
-        int gateOffset() const { return GateOffset::Min + _data1.gateOffset; }
+        int gateOffset() const { return GateOffset::Min + (int) _data1.gateOffset; }
         void setGateOffset(int gateOffset) {
-            // TODO: allow negative gate delay in the future
-            _data1.gateOffset = std::max(0, GateOffset::clamp(gateOffset)) - GateOffset::Min;
+            _data1.gateOffset = GateOffset::clamp(gateOffset) - GateOffset::Min;
         }
 
         // slide
@@ -179,6 +208,14 @@ public:
         int layerValue(Layer layer) const;
         void setLayerValue(Layer layer, int value);
 
+        bool bypassScale() const { return _data1.bypassScale ? true : false; }
+        void setBypassScale(bool bypass) {
+            _data1.bypassScale = bypass;
+        }
+        void toggleBypassScale() {
+            setBypassScale(!bypassScale());
+        }
+
         //----------------------------------------
         // Methods
         //----------------------------------------
@@ -203,21 +240,24 @@ public:
             uint32_t raw;
             BitField<uint32_t, 0, 1> gate;
             BitField<uint32_t, 1, 1> slide;
-            BitField<uint32_t, 2, GateProbability::Bits> gateProbability;
-            BitField<uint32_t, 5, Length::Bits> length;
-            BitField<uint32_t, 8, LengthVariationRange::Bits> lengthVariationRange;
-            BitField<uint32_t, 12, LengthVariationProbability::Bits> lengthVariationProbability;
-            BitField<uint32_t, 15, Note::Bits> note;
-            BitField<uint32_t, 22, NoteVariationRange::Bits> noteVariationRange;
-            BitField<uint32_t, 29, NoteVariationProbability::Bits> noteVariationProbability;
+            BitField<uint32_t, 2, Length::Bits> length;
+            BitField<uint32_t, 6, LengthVariationRange::Bits> lengthVariationRange;
+            BitField<uint32_t, 10, LengthVariationProbability::Bits> lengthVariationProbability;
+            BitField<uint32_t, 14, Note::Bits> note;
+            BitField<uint32_t, 21, NoteVariationRange::Bits> noteVariationRange;
+            BitField<uint32_t, 28, NoteVariationProbability::Bits> noteVariationProbability;
         } _data0;
         union {
             uint32_t raw;
-            BitField<uint32_t, 0, Retrigger::Bits> retrigger;
-            BitField<uint32_t, 2, RetriggerProbability::Bits> retriggerProbability;
-            BitField<uint32_t, 5, GateOffset::Bits> gateOffset;
-            BitField<uint32_t, 9, Condition::Bits> condition;
-            // 16 bits left
+            BitField<uint32_t, 0, 1> bypassScale;
+            BitField<uint32_t, 1, Retrigger::Bits> retrigger;
+            BitField<uint32_t, 4, GateProbability::Bits> gateProbability;
+            BitField<uint32_t, 8, RetriggerProbability::Bits> retriggerProbability;
+            BitField<uint32_t, 12, GateOffset::Bits> gateOffset;
+            BitField<uint32_t, 16, Condition::Bits> condition;
+            BitField<uint32_t, 23, StageRepeats::Bits> stageRepeats;
+            BitField<uint32_t, 26, StageRepeatsMode::Bits> stageRepeatMode;
+            // 4 bits left
         } _data1;
     };
 
@@ -227,6 +267,23 @@ public:
     // Properties
     //----------------------------------------
 
+    // slot
+
+    int slot() const { return _slot; }
+    void setSlot(int slot) {
+        _slot = slot;
+    }
+    bool slotAssigned() const {
+        return _slot != uint8_t(-1);
+    }
+
+    // name
+
+    const char *name() const { return _name; }
+    void setName(const char *name) {
+        StringUtils::copy(_name, name, sizeof(_name));
+    }
+
     // trackIndex
 
     int trackIndex() const { return _trackIndex; }
@@ -234,8 +291,42 @@ public:
     // scale
 
     int scale() const { return _scale.get(isRouted(Routing::Target::Scale)); }
-    void setScale(int scale, bool routed = false) {
-        _scale.set(clamp(scale, -1, Scale::Count - 1), routed);
+    void setScale(int s, bool routed = false, int defaultScale = 0) {
+
+        auto &pScale = selectedScale(defaultScale);
+
+        _scale.set(clamp(s, -1, Scale::Count - 1), routed);
+
+        auto &aScale = selectedScale(s);
+
+        if (pScale == aScale) {
+            return;
+        }
+
+        if (s != -1 && aScale.isChromatic() && pScale.isChromatic() > 0) {
+            for (int i = 0; i < 64; ++i) {
+
+                auto pStep = _steps[i];
+
+                int rN = pScale.noteIndex(pStep.note(), selectedRootNote(0));
+                if (rN > 0) {
+                    if (aScale.isNotePresent(rN)) {
+                        int pNoteIndex = aScale.getNoteIndex(rN);
+                        step(i).setNote(pNoteIndex);
+                    } else {
+                        // search nearest note
+                        while (!aScale.isNotePresent(rN)) {
+                            rN--;
+                        }
+                        int pNoteIndex = aScale.getNoteIndex(rN);
+                        step(i).setNote(pNoteIndex);
+                    }
+                }
+
+
+            }
+        }
+
     }
 
     int indexedScale() const { return scale() + 1; }
@@ -243,9 +334,9 @@ public:
         setScale(index - 1);
     }
 
-    void editScale(int value, bool shift) {
+    void editScale(int value, bool shift, int defaultScale = 0) {
         if (!isRouted(Routing::Target::Scale)) {
-            setScale(scale() + value);
+            setScale(value, false, defaultScale);
         }
     }
 
@@ -399,6 +490,25 @@ public:
         str("%d", lastStep() + 1);
     }
 
+    int currentRecordStep() const {
+        return _currentRecordStep.get(isRouted(Routing::Target::CurrentRecordStep)); 
+    }
+    
+    void setCurrentRecordStep(int step, bool routed = false) {
+        _currentRecordStep.set(clamp(step, firstStep(), CONFIG_STEP_COUNT - 1), routed);
+    }    
+    
+    void editCurrentRecordStep(int value, bool shift) {
+        if (!isRouted(Routing::Target::CurrentRecordStep)) {
+            setCurrentRecordStep(currentRecordStep()+value);
+        }
+    }
+
+    void printCurrentRecordStep(StringBuilder &str) const {
+        printRouted(str, Routing::Target::CurrentRecordStep);
+        str("%d", currentRecordStep() + 1);
+    }
+
     // steps
 
     const StepArray &steps() const { return _steps; }
@@ -423,6 +533,7 @@ public:
 
     void clear();
     void clearSteps();
+    void clearStepsSelected(const std::bitset<CONFIG_STEP_COUNT> &selected);
 
     bool isEdited() const;
 
@@ -434,7 +545,18 @@ public:
     void duplicateSteps();
 
     void write(VersionedSerializedWriter &writer) const;
-    void read(VersionedSerializedReader &reader);
+    bool read(VersionedSerializedReader &reader);
+
+    int trackIndex() {
+        return _trackIndex;
+    }
+
+    int section() { return _section; }
+    const int section() const { return _section; }
+
+    void setSecion(int section) {
+        _section = section;
+    }
 
 private:
     void setTrackIndex(int trackIndex) { _trackIndex = trackIndex; }
@@ -450,8 +572,13 @@ private:
         }
     }
 
+    uint8_t _slot = uint8_t(-1);
+    char _name[NameLength + 1];
     int8_t _trackIndex = -1;
     Routable<int8_t> _scale;
+
+    int _previousScale;
+
     Routable<int8_t> _rootNote;
     Routable<uint16_t> _divisor;
     uint8_t _resetMeasure;
@@ -459,9 +586,16 @@ private:
     Routable<uint8_t> _firstStep;
     Routable<uint8_t> _lastStep;
 
+    Routable<uint8_t> _currentRecordStep;
+
     StepArray _steps;
 
     uint8_t _edited;
+
+    int _section = 0;
+    uint32_t _lastGateOff;
+    uint8_t _gate;
+    static constexpr uint32_t GateOnDelay = os::time::ms(5);
 
     friend class NoteTrack;
 };

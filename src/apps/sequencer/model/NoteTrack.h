@@ -1,12 +1,18 @@
 #pragma once
 
+#include "BaseTrackPatternFollow.h"
 #include "Config.h"
 #include "Types.h"
 #include "NoteSequence.h"
 #include "Serialize.h"
 #include "Routing.h"
+#include "FileDefs.h"
+#include "core/utils/StringUtils.h"
+#include "BaseTrack.h"
+#include <cstdint>
 
-class NoteTrack {
+
+class NoteTrack : public BaseTrack, public BaseTrackPatternFollow {
 public:
     //----------------------------------------
     // Types
@@ -55,6 +61,8 @@ public:
     //----------------------------------------
     // Properties
     //----------------------------------------
+
+    const int trackIndex() const { return _trackIndex;}
 
     // playMode
 
@@ -268,6 +276,44 @@ public:
     const NoteSequence &sequence(int index) const { return _sequences[index]; }
           NoteSequence &sequence(int index)       { return _sequences[index]; }
 
+    void setSequence(int index, NoteSequence seq) {
+        _sequences[index] = seq;
+    }
+
+    const int logicTrack() const { return _logicTrack; }
+    void setLogicTrack(int logicTrack) {
+        _logicTrack = clamp(logicTrack, -1, 7);
+    }
+
+    void printLogicTrack(StringBuilder &str) const {
+        if (logicTrack()==-1) {
+            str("Off");
+        } else {
+            str("%d", logicTrack()+1);
+        }
+    }
+
+    void editLogicTrack(int value, bool shift) {
+        setLogicTrack(logicTrack()+ value);
+    }
+
+    const int logicTrackInput() const { return _logicTrackInput; }
+    void setLogicTrackInput(int logicTrackInput) {
+        _logicTrackInput = clamp(logicTrackInput, -1, 1);
+    }
+
+    void printLogicTrackInput(StringBuilder &str) const {
+        if (logicTrackInput()==-1) {
+            str("-");
+        } else {
+            str("%d", logicTrackInput()+1);
+        }
+    }
+
+    void editLogicTrackInput(int value, bool shift) {
+        setLogicTrackInput(logicTrackInput()+ value);
+    }
+
     //----------------------------------------
     // Routing
     //----------------------------------------
@@ -308,6 +354,9 @@ private:
     Routable<int8_t> _retriggerProbabilityBias;
     Routable<int8_t> _lengthBias;
     Routable<int8_t> _noteProbabilityBias;
+
+    int8_t _logicTrack = -1;
+    int8_t _logicTrackInput = -1;
 
     NoteSequenceArray _sequences;
 

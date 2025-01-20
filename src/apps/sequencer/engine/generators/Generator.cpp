@@ -13,7 +13,7 @@ static void initLayer(SequenceBuilder &builder) {
     builder.clearLayer();
 }
 
-Generator *Generator::execute(Generator::Mode mode, SequenceBuilder &builder) {
+Generator *Generator::execute(Generator::Mode mode, SequenceBuilder &builder, SelectedSteps &selected) {
     switch (mode) {
     case Mode::InitLayer:
         initLayer(builder);
@@ -21,7 +21,7 @@ Generator *Generator::execute(Generator::Mode mode, SequenceBuilder &builder) {
     case Mode::Euclidean:
         return generatorContainer.create<EuclideanGenerator>(builder, euclideanParams);
     case Mode::Random:
-        return generatorContainer.create<RandomGenerator>(builder, randomParams);
+        return generatorContainer.create<RandomGenerator>(builder, randomParams, selected);
     case Mode::Last:
         break;
     }

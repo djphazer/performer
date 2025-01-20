@@ -69,6 +69,21 @@ static int evalTransposition(const Scale &scale, int octave, int transpose) {
 
 // evaluate note voltage
 static float evalStepNote(const NoteSequence::Step &step, int probabilityBias, const Scale &scale, int rootNote, int octave, int transpose, bool useVariation = true) {
+
+
+    if (step.bypassScale()) {
+        const Scale &bypassScale = Scale::get(0);
+        int note = step.note() + evalTransposition(bypassScale, octave, transpose);
+        int probability = clamp(step.noteVariationProbability() + probabilityBias, -1, NoteSequence::NoteVariationProbability::Max);
+        if (useVariation && int(rng.nextRange(NoteSequence::NoteVariationProbability::Range)) <= probability) {
+            int offset = step.noteVariationRange() == 0 ? 0 : rng.nextRange(std::abs(step.noteVariationRange()) + 1);
+            if (step.noteVariationRange() < 0) {
+                offset = -offset;
+            }
+            note = NoteSequence::Note::clamp(note + offset);
+        }
+        return bypassScale.noteToVolts(note) + (bypassScale.isChromatic() ? rootNote : 0) * (1.f / 12.f);
+    }
     int note = step.note() + evalTransposition(scale, octave, transpose);
     int probability = clamp(step.noteVariationProbability() + probabilityBias, -1, NoteSequence::NoteVariationProbability::Max);
     if (useVariation && int(rng.nextRange(NoteSequence::NoteVariationProbability::Range)) <= probability) {
@@ -88,12 +103,14 @@ void NoteTrackEngine::reset() {
     _prevCondition = false;
     _activity = false;
     _gateOutput = false;
-    _cvOutput = 0.f;
-    _cvOutputTarget = 0.f;
+    if (_model.project().resetCvOnStop()) {
+        _cvOutput = 0.f;
+        _cvOutputTarget = 0.f;
+    }
     _slideActive = false;
     _gateQueue.clear();
     _cvQueue.clear();
-    _recordHistory.clear();
+    //_recordHistory.clear();
 
     changePattern();
 }
@@ -114,7 +131,11 @@ TrackEngine::TickResult NoteTrackEngine::tick(uint32_t tick) {
         _sequenceState = *linkData->sequenceState;
 
         if (linkData->relativeTick % linkData->divisor == 0) {
-            recordStep(tick, linkData->divisor);
+            int abstoluteStep = int(linkData->relativeTick / linkData->divisor);
+            recordStep(tick+1, linkData->divisor);
+            if (abstoluteStep == 0 ||abstoluteStep >= _model.project().recordDelay()+1) {
+                    recordStep(tick+1, linkData->divisor);
+                }
             triggerStep(tick, linkData->divisor);
         }
     } else {
@@ -122,18 +143,41 @@ TrackEngine::TickResult NoteTrackEngine::tick(uint32_t tick) {
         uint32_t resetDivisor = sequence.resetMeasure() * _engine.measureDivisor();
         uint32_t relativeTick = resetDivisor == 0 ? tick : tick % resetDivisor;
 
+        if (int(_model.project().stepsToStop()) != 0 && int(relativeTick / divisor) == int(_model.project().stepsToStop())) {
+            _engine.clockStop();
+        }
+
         // handle reset measure
         if (relativeTick == 0) {
             reset();
+            _currentStageRepeat = 1;
         }
+        auto &sequence = *_sequence;
 
         // advance sequence
         switch (_noteTrack.playMode()) {
         case Types::PlayMode::Aligned:
             if (relativeTick % divisor == 0) {
-                _sequenceState.advanceAligned(relativeTick / divisor, sequence.runMode(), sequence.firstStep(), sequence.lastStep(), rng);
-                recordStep(tick, divisor);
+                int abstoluteStep = int(relativeTick / divisor);
+                _sequenceState.advanceAligned(abstoluteStep, sequence.runMode(), sequence.firstStep(), sequence.lastStep(), rng);
+
+                if (abstoluteStep == 0 ||abstoluteStep >= _model.project().recordDelay()+1) {
+                    recordStep(tick+1, divisor);
+                }
                 triggerStep(tick, divisor);
+
+                const auto &step = sequence.step(_sequenceState.step());
+                if (step.gateOffset()<0) {
+                    _sequenceState.calculateNextStepAligned(
+                            (relativeTick + divisor) / divisor,
+                            sequence.runMode(),
+                            sequence.firstStep(),
+                            sequence.lastStep(),
+                            rng
+                        );
+                        
+                    triggerStep(tick + divisor, divisor, true);
+                }
             }
             break;
         case Types::PlayMode::Free:
@@ -142,9 +186,36 @@ TrackEngine::TickResult NoteTrackEngine::tick(uint32_t tick) {
                 _freeRelativeTick = 0;
             }
             if (relativeTick == 0) {
-                _sequenceState.advanceFree(sequence.runMode(), sequence.firstStep(), sequence.lastStep(), rng);
+
+                if (_currentStageRepeat == 1) {
+                     _sequenceState.advanceFree(sequence.runMode(), sequence.firstStep(), sequence.lastStep(), rng);
+                      _sequenceState.calculateNextStepFree(
+                        sequence.runMode(), sequence.firstStep(), sequence.lastStep(), rng);
+                }
+
                 recordStep(tick, divisor);
-                triggerStep(tick, divisor);
+                const auto &step = sequence.step(_sequenceState.step());
+                bool isLastStageStep = ((int) (step.stageRepeats()+1) - (int) _currentStageRepeat) <= 0;
+
+                if (step.gateOffset() >= 0) {
+                    triggerStep(tick, divisor);
+                }
+
+                if (!isLastStageStep && step.gateOffset() < 0) {
+                    triggerStep(tick + divisor, divisor, false);
+                }
+
+                if (isLastStageStep 
+                        && sequence.step(_sequenceState.nextStep()).gateOffset() < 0) {
+                    triggerStep(tick + divisor, divisor, true);
+                }
+
+                if (isLastStageStep) {
+                   _currentStageRepeat = 1;
+                } else {
+                    _currentStageRepeat++;
+                }
+
             }
             break;
         case Types::PlayMode::Last:
@@ -272,6 +343,11 @@ void NoteTrackEngine::monitorMidi(uint32_t tick, const MidiMessage &message) {
 
     if (_engine.recording() && _model.project().recordMode() == Types::RecordMode::StepRecord) {
         _stepRecorder.process(message, *_sequence, [this] (int midiNote) { return noteFromMidiNote(midiNote); });
+        if (Routing::isRouted(Routing::Target::CurrentRecordStep, _model.project().selectedTrackIndex())) {
+            _sequence->setCurrentRecordStep(_stepRecorder.stepIndex(), true);
+        } else {
+            _sequence->setCurrentRecordStep(_stepRecorder.stepIndex(), false);
+        }
     }
 }
 
@@ -288,8 +364,7 @@ void NoteTrackEngine::setMonitorStep(int index) {
         _stepRecorder.setStepIndex(index);
     }
 }
-
-void NoteTrackEngine::triggerStep(uint32_t tick, uint32_t divisor) {
+void NoteTrackEngine::triggerStep(uint32_t tick, uint32_t divisor, bool forNextStep) {
     int octave = _noteTrack.octave();
     int transpose = _noteTrack.transpose();
     int rotate = _noteTrack.rotate();
@@ -300,14 +375,76 @@ void NoteTrackEngine::triggerStep(uint32_t tick, uint32_t divisor) {
 
     const auto &sequence = *_sequence;
     const auto &evalSequence = useFillSequence ? *_fillSequence : *_sequence;
-    _currentStep = SequenceUtils::rotateStep(_sequenceState.step(), sequence.firstStep(), sequence.lastStep(), rotate);
-    const auto &step = evalSequence.step(_currentStep);
 
-    uint32_t gateOffset = (divisor * step.gateOffset()) / (NoteSequence::GateOffset::Max + 1);
+    // TODO do we need to encounter rotate?
+    _currentStep = SequenceUtils::rotateStep(_sequenceState.step(), sequence.firstStep(), sequence.lastStep(), rotate);
+
+    int stepIndex;
+
+    if (forNextStep) {
+        stepIndex = _sequenceState.nextStep();
+    } else {
+        stepIndex = _currentStep;
+    }
+
+    if (stepIndex < 0) return;
+
+    const auto &step = evalSequence.step(stepIndex);
+
+    int gateOffset = ((int) divisor * step.gateOffset()) / (NoteSequence::GateOffset::Max + 1);
+    uint32_t stepTick = (int) tick + gateOffset;
 
     bool stepGate = evalStepGate(step, _noteTrack.gateProbabilityBias()) || useFillGates;
     if (stepGate) {
         stepGate = evalStepCondition(step, _sequenceState.iteration(), useFillCondition, _prevCondition);
+    }
+    switch (step.stageRepeatMode()) {
+        case Types::StageRepeatMode::Each:
+            break;
+        case Types::StageRepeatMode::First:
+            stepGate = stepGate && _currentStageRepeat == 1;
+            break;
+        case Types::StageRepeatMode::Last:
+            stepGate = stepGate && _currentStageRepeat == step.stageRepeats()+1;
+            break;
+        case Types::StageRepeatMode::Middle:
+            stepGate = stepGate && _currentStageRepeat == (step.stageRepeats()+1)/2;
+            break;
+        case Types::StageRepeatMode::Odd:
+            stepGate = stepGate && _currentStageRepeat % 2 != 0;
+            break;
+        case Types::StageRepeatMode::Even:
+            stepGate = stepGate && _currentStageRepeat % 2 == 0;
+            break;
+        case Types::StageRepeatMode::Triplets:
+            stepGate = stepGate && (_currentStageRepeat - 1) % 3 == 0;
+            break;
+        case Types::StageRepeatMode::Random:
+                int rndMode = rng.nextRange(6);
+                switch (rndMode) {
+                    case 0:
+                        break;
+                    case 1:
+                        stepGate = stepGate && _currentStageRepeat == 1;
+                        break;
+                    case 2:
+                        stepGate = stepGate && _currentStageRepeat == step.stageRepeats()+1;
+                        break;
+                    case 3:
+                        stepGate = stepGate && _currentStageRepeat % ((step.stageRepeats()+1)/2)+1 == 0;
+                        break;
+                    case 4:
+                        stepGate = stepGate && _currentStageRepeat % 2 != 0;
+                        break;
+                    case 5:
+                        stepGate = stepGate && _currentStageRepeat % 2 == 0;
+                        break;
+                    case 6:
+                        stepGate = stepGate && (_currentStageRepeat - 1) % 3 == 0;
+                        break;
+
+                }
+                break;
     }
 
     if (stepGate) {
@@ -317,25 +454,30 @@ void NoteTrackEngine::triggerStep(uint32_t tick, uint32_t divisor) {
             uint32_t retriggerLength = divisor / stepRetrigger;
             uint32_t retriggerOffset = 0;
             while (stepRetrigger-- > 0 && retriggerOffset <= stepLength) {
-                _gateQueue.pushReplace({ Groove::applySwing(tick + gateOffset + retriggerOffset, swing()), true });
-                _gateQueue.pushReplace({ Groove::applySwing(tick + gateOffset + retriggerOffset + retriggerLength / 2, swing()), false });
+                _gateQueue.pushReplace({ Groove::applySwing(stepTick + retriggerOffset, swing()), true });
+                _gateQueue.pushReplace({ Groove::applySwing(stepTick + retriggerOffset + retriggerLength / 2, swing()), false });
                 retriggerOffset += retriggerLength;
             }
         } else {
-            _gateQueue.pushReplace({ Groove::applySwing(tick + gateOffset, swing()), true });
-            _gateQueue.pushReplace({ Groove::applySwing(tick + gateOffset + stepLength, swing()), false });
+            _gateQueue.pushReplace({ Groove::applySwing(stepTick, swing()), true });
+            _gateQueue.pushReplace({ Groove::applySwing(stepTick + stepLength, swing()), false });
         }
     }
 
     if (stepGate || _noteTrack.cvUpdateMode() == NoteTrack::CvUpdateMode::Always) {
         const auto &scale = evalSequence.selectedScale(_model.project().scale());
         int rootNote = evalSequence.selectedRootNote(_model.project().rootNote());
-        _cvQueue.push({ Groove::applySwing(tick + gateOffset, swing()), evalStepNote(step, _noteTrack.noteProbabilityBias(), scale, rootNote, octave, transpose), step.slide() });
+        _cvQueue.push({ Groove::applySwing(stepTick, swing()), evalStepNote(step, _noteTrack.noteProbabilityBias(), scale, rootNote, octave, transpose), step.slide() });
     }
 }
 
+void NoteTrackEngine::triggerStep(uint32_t tick, uint32_t divisor) {
+    triggerStep(tick, divisor, false);
+}
+
 void NoteTrackEngine::recordStep(uint32_t tick, uint32_t divisor) {
-    if (!_engine.state().recording() || _model.project().recordMode() == Types::RecordMode::StepRecord || _sequenceState.prevStep() < 0) {
+
+    if (!_engine.state().recording() || _model.project().recordMode() == Types::RecordMode::StepRecord || _sequenceState.prevStep()==-1) {
         return;
     }
 
@@ -356,6 +498,7 @@ void NoteTrackEngine::recordStep(uint32_t tick, uint32_t divisor) {
         step.setNoteVariationRange(0);
         step.setNoteVariationProbability(NoteSequence::NoteVariationProbability::Max);
         step.setCondition(Types::Condition::Off);
+
 
         stepWritten = true;
     };

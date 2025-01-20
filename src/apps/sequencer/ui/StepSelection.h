@@ -109,6 +109,38 @@ public:
         _first = 0;
     }
 
+    void shiftLeft(int firstStep = 0, int lastStep = N) {
+        rotateL(_selected, 1, firstStep, lastStep);
+    }
+
+    void shiftRight(int firstStep = 0, int lastStep = N) {
+        rotateR(_selected, 1, firstStep, lastStep);
+    }
+
+    inline void rotateR(std::bitset<N>& b, unsigned m, int firstStep, int lastStep) {
+        std::bitset<N> r;
+        for (int i=firstStep; i < lastStep; ++i) {
+            int index = i+m;
+            if (i==lastStep-1) {    
+                index = firstStep;
+            }
+            r[index] = b[i];
+        }
+        b = r;
+    }
+
+    inline void rotateL(std::bitset<N>& b, unsigned m, int firstStep, int lastStep) {
+        std::bitset<N> r;
+        for (int i=firstStep; i < lastStep; ++i) {
+            int index = i-m;
+             if (index < firstStep) {
+                index = lastStep-1;
+            }
+            r[index] = b[i];
+        }
+        b = r;
+    }
+
     void selectEqualSteps(int stepIndex) {
         _mode = Mode::Persist;
         for (int i = 0; i < int(_selected.size()); ++i) {
@@ -166,6 +198,7 @@ public:
     }
 
     const std::bitset<N> &selected() const { return _selected; }
+    std::bitset<N> &selected() { return _selected; }
 
     bool operator[](int index) const {
         return _selected[index];

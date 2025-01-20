@@ -21,6 +21,7 @@ void ClipBoard::copyTrack(const Track &track) {
 
 void ClipBoard::copyNoteSequence(const NoteSequence &noteSequence) {
     _type = Type::NoteSequence;
+    _container.as<NoteSequence>().setName(noteSequence.name());
     _container.as<NoteSequence>() = noteSequence;
 }
 
@@ -31,8 +32,16 @@ void ClipBoard::copyNoteSequenceSteps(const NoteSequence &noteSequence, const Se
     noteSequenceSteps.selected = selectedSteps;
 }
 
+void ClipBoard::copyNoteSequenceSteps(NoteSequence &noteSequence, const SelectedSteps &selectedSteps) {
+    _type = Type::NoteSequenceSteps;
+    auto &noteSequenceSteps = _container.as<NoteSequenceSteps>();
+    noteSequenceSteps.sequence = noteSequence;
+    noteSequenceSteps.selected = selectedSteps;
+}
+
 void ClipBoard::copyCurveSequence(const CurveSequence &curveSequence) {
     _type = Type::CurveSequence;
+    _container.as<CurveSequence>().setName(curveSequence.name());
     _container.as<CurveSequence>() = curveSequence;
 }
 
@@ -41,6 +50,44 @@ void ClipBoard::copyCurveSequenceSteps(const CurveSequence &curveSequence, const
     auto &curveSequenceSteps = _container.as<CurveSequenceSteps>();
     curveSequenceSteps.sequence = curveSequence;
     curveSequenceSteps.selected = selectedSteps;
+}
+
+void ClipBoard::copyStochasticSequence(const StochasticSequence &sequence) {
+    _type = Type::StochasticSequence;
+    _container.as<StochasticSequence>() = sequence;
+}
+
+void ClipBoard::copyStochasticSequenceSteps(const StochasticSequence &sequence, const SelectedSteps &selectedSteps) {
+    _type = Type::StochasticSequenceSteps;
+    auto &stochasticSequenceSteps = _container.as<StochasticSequenceSteps>();
+    stochasticSequenceSteps.sequence = sequence;
+    stochasticSequenceSteps.selected = selectedSteps;
+}
+
+void ClipBoard::copyLogicSequence(const LogicSequence &sequence) {
+    _type = Type::LogicSequence;
+    _container.as<LogicSequence>().setName(sequence.name());
+    _container.as<LogicSequence>() = sequence;
+}
+
+void ClipBoard::copyLogicSequenceSteps(const LogicSequence &sequence, const SelectedSteps &selectedSteps) {
+    _type = Type::LogicSequenceSteps;
+    auto &logicSequenceSteps = _container.as<LogicSequenceSteps>();
+    logicSequenceSteps.sequence = sequence;
+    logicSequenceSteps.selected = selectedSteps;
+}
+
+void ClipBoard::copyArpSequence(const ArpSequence &sequence) {
+    _type = Type::ArpSequence;
+    _container.as<ArpSequence>().setName(sequence.name());
+    _container.as<ArpSequence>() = sequence;
+}
+
+void ClipBoard::copyArpSequenceSteps(const ArpSequence &sequence, const SelectedSteps &selectedSteps) {
+    _type = Type::ArpSequenceSteps;
+    auto &arpSequenceSteps = _container.as<ArpSequenceSteps>();
+    arpSequenceSteps.sequence = sequence;
+    arpSequenceSteps.selected = selectedSteps;
 }
 
 void ClipBoard::copyPattern(int patternIndex) {
@@ -55,6 +102,15 @@ void ClipBoard::copyPattern(int patternIndex) {
             break;
         case Track::TrackMode::Curve:
             pattern.sequences[trackIndex].data.curve = track.curveTrack().sequence(patternIndex);
+            break;
+        case Track::TrackMode::Stochastic:
+            pattern.sequences[trackIndex].data.stochastic = track.stochasticTrack().sequence(patternIndex);
+            break;
+        case Track::TrackMode::Logic:
+            pattern.sequences[trackIndex].data.logic = track.logicTrack().sequence(patternIndex);
+            break;
+        case Track::TrackMode::Arp:
+            pattern.sequences[trackIndex].data.arp = track.arpTrack().sequence(patternIndex);
             break;
         default:
             break;
@@ -78,6 +134,7 @@ void ClipBoard::pasteTrack(Track &track) const {
 void ClipBoard::pasteNoteSequence(NoteSequence &noteSequence) const {
     if (canPasteNoteSequence()) {
         Model::WriteLock lock;
+        noteSequence.setName(_container.as<NoteSequence>().name());
         noteSequence = _container.as<NoteSequence>();
     }
 }
@@ -92,6 +149,7 @@ void ClipBoard::pasteNoteSequenceSteps(NoteSequence &noteSequence, const Selecte
 void ClipBoard::pasteCurveSequence(CurveSequence &curveSequence) const {
     if (canPasteCurveSequence()) {
         Model::WriteLock lock;
+        curveSequence.setName(_container.as<CurveSequence>().name());
         curveSequence = _container.as<CurveSequence>();
     }
 }
@@ -100,6 +158,50 @@ void ClipBoard::pasteCurveSequenceSteps(CurveSequence &curveSequence, const Sele
     if (canPasteCurveSequenceSteps()) {
         const auto &curveSequenceSteps = _container.as<CurveSequenceSteps>();
         ModelUtils::copySteps(curveSequenceSteps.sequence.steps(), curveSequenceSteps.selected, curveSequence.steps(), selectedSteps);
+    }
+}
+
+
+void ClipBoard::pasteStochasticSequence(StochasticSequence &sequence) const {
+    if (canPasteStochasticSequence()) {
+        Model::WriteLock lock;
+        sequence = _container.as<StochasticSequence>();
+    }
+}
+
+void ClipBoard::pasteStochasticSequenceSteps(StochasticSequence &sequence, const SelectedSteps &selectedSteps) const {
+    if (canPasteStochasticSequenceSteps()) {
+        const auto &stochasticSequenceSteps = _container.as<StochasticSequenceSteps>();
+        ModelUtils::copySteps(stochasticSequenceSteps.sequence.steps(), stochasticSequenceSteps.selected, sequence.steps(), selectedSteps);
+    }
+}
+
+void ClipBoard::pasteLogicSequence(LogicSequence &sequence) const {
+    if (canPasteLogicSequence()) {
+        Model::WriteLock lock;
+        sequence.setName(_container.as<LogicSequence>().name());
+        sequence = _container.as<LogicSequence>();
+    }
+}
+
+void ClipBoard::pasteLogicSequenceSteps(LogicSequence &sequence, const SelectedSteps &selectedSteps) const {
+    if (canPasteLogicSequenceSteps()) {
+        const auto &logicSequenceSteps = _container.as<LogicSequenceSteps>();
+        ModelUtils::copySteps(logicSequenceSteps.sequence.steps(), logicSequenceSteps.selected, sequence.steps(), selectedSteps);
+    }
+}
+
+void ClipBoard::pasteArpSequence(ArpSequence &sequence) const {
+    if (canPasteArpSequence()) {
+        Model::WriteLock lock;
+        sequence = _container.as<ArpSequence>();
+    }
+}
+
+void ClipBoard::pasteArpSequenceSteps(ArpSequence &sequence, const SelectedSteps &selectedSteps) const {
+    if (canPasteArpSequenceSteps()) {
+        const auto &arpSequenceSteps = _container.as<ArpSequenceSteps>();
+        ModelUtils::copySteps(arpSequenceSteps.sequence.steps(), arpSequenceSteps.selected, sequence.steps(), selectedSteps);
     }
 }
 
@@ -116,6 +218,15 @@ void ClipBoard::pastePattern(int patternIndex) const {
                     break;
                 case Track::TrackMode::Curve:
                     track.curveTrack().sequence(patternIndex) = pattern.sequences[trackIndex].data.curve;
+                    break;
+                case Track::TrackMode::Stochastic:
+                    track.stochasticTrack().sequence(patternIndex) = pattern.sequences[trackIndex].data.stochastic;
+                    break;
+                case Track::TrackMode::Logic:
+                    track.logicTrack().sequence(patternIndex) = pattern.sequences[trackIndex].data.logic;
+                    break;
+                case Track::TrackMode::Arp:
+                    track.arpTrack().sequence(patternIndex) = pattern.sequences[trackIndex].data.arp;
                     break;
                 default:
                     break;
@@ -149,6 +260,30 @@ bool ClipBoard::canPasteCurveSequence() const {
 
 bool ClipBoard::canPasteCurveSequenceSteps() const {
     return _type == Type::CurveSequenceSteps;
+}
+
+bool ClipBoard::canPasteStochasticSequence() const {
+    return _type == Type::StochasticSequence;
+}
+
+bool ClipBoard::canPasteStochasticSequenceSteps() const {
+    return _type == Type::StochasticSequenceSteps;
+}
+
+bool ClipBoard::canPasteLogicSequence() const {
+    return _type == Type::LogicSequence;
+}
+
+bool ClipBoard::canPasteLogicSequenceSteps() const {
+    return _type == Type::LogicSequenceSteps;
+}
+
+bool ClipBoard::canPasteArpSequence() const {
+    return _type == Type::ArpSequence;
+}
+
+bool ClipBoard::canPasteArpSequenceSteps() const {
+    return _type == Type::ArpSequenceSteps;
 }
 
 bool ClipBoard::canPastePattern() const {

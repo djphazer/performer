@@ -2,6 +2,7 @@
 
 #include "FileDefs.h"
 #include "Project.h"
+#include "Routing.h"
 #include "UserScale.h"
 #include "Settings.h"
 
@@ -28,11 +29,29 @@ public:
     static fs::Error writeUserScale(const UserScale &userScale, int slot);
     static fs::Error readUserScale(UserScale &userScale, int slot);
 
+    static fs::Error writeNoteSequence(const NoteSequence &noteSequence, int slot);
+    static fs::Error readNoteSequence(NoteSequence &noteSequence, int slot);
+    static fs::Error writeCurveSequence(const CurveSequence &curveSequence, int slot);
+    static fs::Error readCurveSequence(CurveSequence &curveSequence, int slot);
+    static fs::Error writeLogicSequence(const LogicSequence &logicSequence, int slot);
+    static fs::Error readLogicSequence(LogicSequence &logicSequence, int slot);
+    static fs::Error writeArpSequence(const ArpSequence &arpSequence, int slot);
+    static fs::Error readArpSequence(ArpSequence &arpSequence, int slot);
+
     static fs::Error writeProject(const Project &project, const char *path);
     static fs::Error readProject(Project &project, const char *path);
 
     static fs::Error writeUserScale(const UserScale &userScale, const char *path);
     static fs::Error readUserScale(UserScale &userScale, const char *path);
+
+    static fs::Error writeNoteSequence(const NoteSequence &noteSequence, const char *path);
+    static fs::Error readNoteSequence(NoteSequence &noteSequence, const char *path);
+    static fs::Error writeCurveSequence(const CurveSequence &curveSequence, const char *path);
+    static fs::Error readCurveSequence(CurveSequence &curveSequence, const char *path);
+    static fs::Error writeLogicSequence(const LogicSequence &logicSequence, const char *path);
+    static fs::Error readLogicSequence(LogicSequence &logicSequence, const char *path);
+    static fs::Error writeArpSequence(const ArpSequence &arpSequence, const char *path);
+    static fs::Error readArpSequence(ArpSequence &arpSequence, const char *path);
 
     static fs::Error writeSettings(const Settings &settings, const char *path);
     static fs::Error readSettings(Settings &settings, const char *path);

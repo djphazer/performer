@@ -160,6 +160,7 @@ void CurveSequence::writeRouted(Routing::Target target, int intValue, float floa
 }
 
 void CurveSequence::clear() {
+    setName("INIT");
     setRange(Types::VoltageRange::Bipolar5V);
     setDivisor(12);
     setResetMeasure(0);
@@ -168,6 +169,18 @@ void CurveSequence::clear() {
     setLastStep(15);
 
     clearSteps();
+}
+
+void CurveSequence::clearStepsSelected(const std::bitset<CONFIG_STEP_COUNT> &selected) {
+    if (selected.any()) {
+        for (size_t i = 0; i < CONFIG_STEP_COUNT; ++i) {
+            if (selected[i]) {
+                _steps[i].clear();
+            }
+    }
+    } else {
+        clearSteps();
+    }
 }
 
 void CurveSequence::clearSteps() {
@@ -197,7 +210,7 @@ void CurveSequence::setShapes(std::initializer_list<int> shapes) {
 
 void CurveSequence::shiftSteps(const std::bitset<CONFIG_STEP_COUNT> &selected, int direction) {
     if (selected.any()) {
-        ModelUtils::shiftSteps(_steps, selected, direction);
+        ModelUtils::shiftSteps(_steps, selected, firstStep(), lastStep(), direction);
     } else {
         ModelUtils::shiftSteps(_steps, firstStep(), lastStep(), direction);
     }
@@ -217,9 +230,12 @@ void CurveSequence::write(VersionedSerializedWriter &writer) const {
     writer.write(_lastStep.base);
 
     writeArray(writer, _steps);
+    writer.write(_name, NameLength + 1);
+    writer.write(_slot);
+    writer.writeHash();
 }
 
-void CurveSequence::read(VersionedSerializedReader &reader) {
+bool CurveSequence::read(VersionedSerializedReader &reader) {
     reader.read(_range);
     if (reader.dataVersion() < ProjectVersion::Version10) {
         reader.readAs<uint8_t>(_divisor.base);
@@ -232,4 +248,17 @@ void CurveSequence::read(VersionedSerializedReader &reader) {
     reader.read(_lastStep.base);
 
     readArray(reader, _steps);
+    if (reader.dataVersion() >= ProjectVersion::Version35) {
+        reader.read(_name, NameLength + 1, ProjectVersion::Version35);
+        reader.read(_slot);
+        bool success = reader.checkHash();
+        if (!success) {
+            clear();
+        }
+        return success;
+    } else {
+        return true;
+    }
+
+    
 }

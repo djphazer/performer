@@ -30,8 +30,8 @@ static const ContextMenuModel::Item contextMenuItems[] = {
     { "INIT" },
     { "COPY" },
     { "PASTE" },
-    { "DUP"},
-    { "SAVE PR."},
+    { "DUP" },
+    { "SAVE" },
 };
 
 
@@ -52,6 +52,10 @@ void PatternPage::draw(Canvas &canvas) {
     const auto &playState = _project.playState();
     bool hasCancel = playState.hasSyncedRequests() || playState.hasLatchedRequests();
     bool snapshotActive = playState.snapshotActive();
+
+
+    int patternChange = _model.settings().userSettings().get<PatternChange>(SettingPatternChange)->getValue();
+
     const char *functionNames[] = {
         "LATCH",
         "SYNC",
@@ -59,6 +63,9 @@ void PatternPage::draw(Canvas &canvas) {
         snapshotActive ? "COMMIT" : nullptr,
         hasCancel ? "CANCEL" : nullptr
     };
+    if (patternChange==1) {
+        functionNames[1] = "IMMEDIATE";
+    }
 
     WindowPainter::clear(canvas);
     WindowPainter::drawHeader(canvas, _model, _engine, "PATTERN");
@@ -218,6 +225,7 @@ void PatternPage::keyUp(KeyEvent &event) {
 
 void PatternPage::keyPress(KeyPressEvent &event) {
     const auto &key = event.key();
+
     auto &playState = _project.playState();
 
     if (key.isContextMenu() && !_modal) {
@@ -263,29 +271,44 @@ void PatternPage::keyPress(KeyPressEvent &event) {
             // select edit pattern
             _project.setSelectedPatternIndex(pattern);
         } else {
-            // select playing pattern
 
-            // use immediate by default
-            // use latched when LATCH is pressed
-            // use synced when SYNC is pressed or project set to always sync
-            PlayState::ExecuteType executeType;
-            if (_latching) executeType = PlayState::Latched;
-            else if (_syncing || (_project.alwaysSyncPatterns() && _engine.state().running())) executeType = PlayState::Synced;
-            else executeType = PlayState::Immediate;
+            int otherKey = otherPressedStepKey(key.state(), key.step());
+            if (otherKey != -1) {
+                int sedondPattern = key.step();
+                int firstPattern = otherKey;
+                auto &song = _project.song();
+                song.chainPattern(firstPattern);
+                song.chainPattern(sedondPattern);
 
-            bool globalChange = true;
-            for (int trackIndex = 0; trackIndex < CONFIG_TRACK_COUNT; ++trackIndex) {
-                if (pageKeyState()[MatrixMap::fromTrack(trackIndex)]) {
-                    playState.selectTrackPattern(trackIndex, pattern, executeType);
-                    globalChange = false;
+            } else {
+
+                UserSettings userSettings = _model.settings().userSettings();
+
+                int _patternChangeDefault = userSettings.get<PatternChange>(SettingPatternChange)->getValue();
+
+                // select playing pattern
+
+                PlayState::ExecuteType executeType = PlayState::Immediate;
+                if (_latching) executeType = PlayState::Latched;
+                else if (_syncing && _patternChangeDefault==1) executeType = PlayState::Immediate;
+                else if (_syncing && _patternChangeDefault==0) executeType = PlayState::Synced;
+                else if (_patternChangeDefault==0) executeType = PlayState::Immediate;
+                else if (_patternChangeDefault==1) executeType = PlayState::Synced;
+
+                bool globalChange = true;
+                for (int trackIndex = 0; trackIndex < CONFIG_TRACK_COUNT; ++trackIndex) {
+                    if (pageKeyState()[MatrixMap::fromTrack(trackIndex)]) {
+                        playState.selectTrackPattern(trackIndex, pattern, executeType);
+                        globalChange = false;
+                    }
+                }
+                if (globalChange) {
+                    playState.selectPattern(pattern, executeType);
+                    _project.setSelectedPatternIndex(pattern);
                 }
             }
-            if (globalChange) {
-                playState.selectPattern(pattern, executeType);
-                _project.setSelectedPatternIndex(pattern);
-            }
+            event.consume();
         }
-        event.consume();
     }
 
     if (key.isLeft()) {
@@ -296,6 +319,19 @@ void PatternPage::keyPress(KeyPressEvent &event) {
         _project.editSelectedPatternIndex(1, false);
         event.consume();
     }
+}
+
+int *PatternPage::getPressedKeySteps(Key key) {
+    int *keys = new int [16];
+    for (int i=9, j=0; i < 25; ++i) {
+        auto s = key.state(i);
+        if (s == 1) {
+            keys[j] = i;
+            j++;
+        }
+    }
+
+    return keys;
 }
 
 void PatternPage::encoder(EncoderEvent &event) {

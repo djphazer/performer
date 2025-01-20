@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Config.h"
+#include "model/Model.h"
 
 #include "SequenceBuilder.h"
 
@@ -51,7 +52,7 @@ public:
 
     virtual void update() = 0;
 
-    static Generator *execute(Generator::Mode mode, SequenceBuilder &builder);
+    static Generator *execute(Generator::Mode mode, SequenceBuilder &builder, SelectedSteps &selected);
 
 protected:
     SequenceBuilder &_builder;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BaseTrack.h"
 #include "Config.h"
 #include "Types.h"
 #include "MidiConfig.h"
@@ -7,15 +8,16 @@
 #include "Serialize.h"
 #include "Arpeggiator.h"
 #include "Routing.h"
+#include "FileDefs.h"
+#include "core/utils/StringUtils.h"
 
 #include "core/math/Math.h"
 
-class MidiCvTrack {
+class MidiCvTrack : public BaseTrack {
 public:
     //----------------------------------------
     // Types
     //----------------------------------------
-
     enum class VoiceSignal : uint8_t { Pitch, Velocity, Pressure };
 
     enum class VoiceConfig : uint8_t {

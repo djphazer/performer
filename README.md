@@ -8,6 +8,11 @@ I'm working to bring this firmware up-to-date, and make myself at home with the 
 
 After encountering instability on the mebitek fork, I've decided to start from the known-good master branch of the original firmware, and carefully work in some of the new features from other forks.
 
+## mebitek Improvements
+
+[Mebitek Documentation](https://mebitek.github.io/performer/manual/)
+[Mebitek's Changelog](https://github.com/mebitek/performer/blob/master/CHANGELOG.md)
+
 ## jackpf Improvements
 
 | Change             	| Documentation                                    	|

@@ -14,8 +14,11 @@
 
 static Random rng;
 
-static float evalStepShape(const CurveSequence::Step &step, bool variation, bool invert, float fraction) {
+static float evalStepShape(const CurveSequence::Step &step, bool variation, bool invert, float fraction, int direction) {
     auto function = Curve::function(Curve::Type(variation ? step.shapeVariation() : step.shape()));
+    if (direction == -1) {
+        function = Curve::function(Curve::Type(variation ? step.shapeVariation() : Curve::revAt(step.shape())));
+    }
     float value = function(fraction);
     if (invert) {
         value = 1.f - value;
@@ -76,6 +79,11 @@ TrackEngine::TickResult CurveTrackEngine::tick(uint32_t tick) {
         uint32_t divisor = sequence.divisor() * (CONFIG_PPQN / CONFIG_SEQUENCE_PPQN);
         uint32_t resetDivisor = sequence.resetMeasure() * _engine.measureDivisor();
         uint32_t relativeTick = resetDivisor == 0 ? tick : tick % resetDivisor;
+
+
+        if (int(_model.project().stepsToStop()) != 0 && int(relativeTick / divisor) == int(_model.project().stepsToStop())) {
+            _engine.clockStop();
+        }
 
         // handle reset measure
         if (relativeTick == 0) {
@@ -218,25 +226,34 @@ void CurveTrackEngine::updateOutput(uint32_t relativeTick, uint32_t divisor) {
         const auto &evalSequence = fillNextPattern ? *_fillSequence : *_sequence;
         const auto &step = evalSequence.step(_currentStep);
 
-        float value = evalStepShape(step, _shapeVariation || fillVariation, fillInvert, _currentStepFraction);
+        float value = evalStepShape(step, _shapeVariation || fillVariation, fillInvert, _currentStepFraction, _sequenceState.direction());
         value = range.denormalize(value);
-        _cvOutputTarget = value;
+
+        float min = float(_curveTrack.min()) / CurveSequence::Min::Max;
+        float max = float(_curveTrack.max()) / CurveSequence::Max::Max;
+
+
+        _cvOutputTarget = min + value * (max - min);
     }
 
     _engine.midiOutputEngine().sendCv(_track.trackIndex(), _cvOutputTarget);
 }
 
 bool CurveTrackEngine::isRecording() const {
-    return
+    bool val =
         _engine.state().recording() &&
-        _model.project().curveCvInput() != Types::CurveCvInput::Off &&
-        _model.project().selectedTrackIndex() == _track.trackIndex();
+        _curveTrack.curveCvInput() != Types::CurveCvInput::Off;
+
+    if (!_model.project().useMultiCvRec()) {
+        return val && _model.project().selectedTrackIndex() == _track.trackIndex();
+    }
+    return val;
 }
 
 void CurveTrackEngine::updateRecordValue() {
     auto &sequence = *_sequence;
     const auto &range = Types::voltageRangeInfo(sequence.range());
-    auto curveCvInput = _model.project().curveCvInput();
+    auto curveCvInput = _curveTrack.curveCvInput();
 
     switch (curveCvInput) {
     case Types::CurveCvInput::Cv1:

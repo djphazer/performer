@@ -1,7 +1,9 @@
 #include "NoteSequenceEditPage.h"
 
+#include "LayoutPage.h"
 #include "Pages.h"
 
+#include "model/NoteSequence.h"
 #include "ui/LedPainter.h"
 #include "ui/painters/SequencePainter.h"
 #include "ui/painters/WindowPainter.h"
@@ -16,8 +18,7 @@ enum class ContextAction {
     Init,
     Copy,
     Paste,
-    Duplicate,
-    Generate,
+    Duplicate,    Generate,
     Last
 };
 
@@ -38,6 +39,7 @@ enum class Function {
 };
 
 static const char *functionNames[] = { "GATE", "RETRIG", "LENGTH", "NOTE", "COND" };
+
 
 static const NoteSequenceListModel::Item quickEditItems[8] = {
     NoteSequenceListModel::Item::FirstStep,
@@ -63,8 +65,20 @@ NoteSequenceEditPage::NoteSequenceEditPage(PageManager &manager, PageContext &co
 void NoteSequenceEditPage::enter() {
     updateMonitorStep();
 
+    _inMemorySequence = _project.selectedNoteSequence();
+
     _showDetail = false;
-}
+
+    if (_project.selectedTrack().noteTrack().playMode() == Types::PlayMode::Aligned) {
+            if (_project.selectedNoteSequenceLayer() == NoteSequence::Layer::StageRepeats || _project.selectedNoteSequenceLayer() == NoteSequence::Layer::StageRepeatsMode ) {
+                _project.setSelectedNoteSequenceLayer(NoteSequence::Layer::Retrigger);
+            }
+        } else {
+            if (_project.selectedNoteSequenceLayer() == NoteSequence::Layer::Retrigger) {
+                _project.setSelectedNoteSequenceLayer(NoteSequence::Layer::StageRepeats);
+            }
+        }
+    }
 
 void NoteSequenceEditPage::exit() {
     _engine.selectedTrackEngine().as<NoteTrackEngine>().setMonitorStep(-1);
@@ -72,20 +86,41 @@ void NoteSequenceEditPage::exit() {
 
 void NoteSequenceEditPage::draw(Canvas &canvas) {
     WindowPainter::clear(canvas);
-    WindowPainter::drawHeader(canvas, _model, _engine, "STEPS");
+
+    auto &track = _project.selectedTrack().noteTrack();
+
+    /* Prepare flags shown before mode name (top right header) */
+    const auto pattern_follow = track.patternFollow();
+    const char* pf_repr = Types::patternFollowShortRepresentation(pattern_follow);
+
+    WindowPainter::drawHeader(canvas, _model, _engine, "STEPS", pf_repr);
+
     WindowPainter::drawActiveFunction(canvas, NoteSequence::layerName(layer()));
     WindowPainter::drawFooter(canvas, functionNames, pageKeyState(), activeFunctionKey());
 
-    const auto &trackEngine = _engine.selectedTrackEngine().as<NoteTrackEngine>();
-    const auto &sequence = _project.selectedNoteSequence();
+    auto &trackEngine = _engine.selectedTrackEngine().as<NoteTrackEngine>();
+
+    auto &sequence = _project.selectedNoteSequence();
     const auto &scale = sequence.selectedScale(_project.scale());
     int currentStep = trackEngine.isActiveSequence(sequence) ? trackEngine.currentStep() : -1;
+    if (trackEngine.currentRecordStep()!=-1) {
+        trackEngine.setCurrentRecordStep(sequence.currentRecordStep());
+    }
     int currentRecordStep = trackEngine.isActiveSequence(sequence) ? trackEngine.currentRecordStep() : -1;
 
     const int stepWidth = Width / StepCount;
     const int stepOffset = this->stepOffset();
 
     const int loopY = 16;
+
+    // Track Pattern Section on the UI
+    if (track.isPatternFollowDisplayOn() && _engine.state().running()) {
+        bool section_change = bool((currentStep) % StepCount == 0); // StepCount is relative to screen
+        int section_no = int((currentStep) / StepCount);
+        if (section_change && section_no != sequence.section()) {
+            sequence.setSecion(section_no);
+        }
+    }
 
     // draw loop points
     canvas.setBlendMode(BlendMode::Set);
@@ -189,7 +224,19 @@ void NoteSequenceEditPage::draw(Canvas &canvas) {
             int rootNote = sequence.selectedRootNote(_model.project().rootNote());
             canvas.setColor(Color::Bright);
             FixedStringBuilder<8> str;
+
+            if (step.bypassScale()) {
+                const Scale &bypassScale = std::ref(Scale::get(0));
+                bypassScale.noteName(str, step.note(), rootNote, Scale::Short1);
+
+                canvas.drawText(x + (stepWidth - canvas.textWidth(str) + 1) / 2, y + 20, str);
+                str.reset();
+                bypassScale.noteName(str, step.note(), rootNote, Scale::Short2);
+                canvas.drawText(x + (stepWidth - canvas.textWidth(str) + 1) / 2, y + 27, str);
+                break;
+            }
             scale.noteName(str, step.note(), rootNote, Scale::Short1);
+
             canvas.drawText(x + (stepWidth - canvas.textWidth(str) + 1) / 2, y + 20, str);
             str.reset();
             scale.noteName(str, step.note(), rootNote, Scale::Short2);
@@ -216,6 +263,13 @@ void NoteSequenceEditPage::draw(Canvas &canvas) {
                 step.slide()
             );
             break;
+        case Layer::BypassScale:
+            SequencePainter::drawBypassScale(
+                canvas,
+                x + 4, y + 18, stepWidth - 8, 4,
+                step.bypassScale()
+            );
+            break;
         case Layer::Condition: {
             canvas.setColor(Color::Bright);
             FixedStringBuilder<8> str;
@@ -226,6 +280,20 @@ void NoteSequenceEditPage::draw(Canvas &canvas) {
             canvas.drawText(x + (stepWidth - canvas.textWidth(str) + 1) / 2, y + 27, str);
             break;
         }
+        case Layer::StageRepeats: {
+            canvas.setColor(Bright);
+            FixedStringBuilder<8> str("x%d", step.stageRepeats()+1);
+            canvas.drawText(x + (stepWidth - canvas.textWidth(str) + 1) / 2, y + 20, str);
+            break;
+        }
+        case Layer::StageRepeatsMode: {
+            SequencePainter::drawStageRepeatMode(
+                canvas,
+                x + 2, y + 18, stepWidth - 4, 6,
+                step.stageRepeatMode()
+            );
+            break;
+        }
         case Layer::Last:
             break;
         }
@@ -234,7 +302,7 @@ void NoteSequenceEditPage::draw(Canvas &canvas) {
     // handle detail display
 
     if (_showDetail) {
-        if (layer() == Layer::Gate || layer() == Layer::Slide || _stepSelection.none()) {
+        if (layer() == Layer::Gate || layer() == Layer::Slide || _stepSelection.none() || layer() == Layer::BypassScale) {
             _showDetail = false;
         }
         if (_stepSelection.isPersisted() && os::ticks() > _showDetailTicks + os::time::ms(500)) {
@@ -245,11 +313,14 @@ void NoteSequenceEditPage::draw(Canvas &canvas) {
     if (_showDetail) {
         drawDetail(canvas, sequence.step(_stepSelection.first()));
     }
+
+
+
 }
 
 void NoteSequenceEditPage::updateLeds(Leds &leds) {
     const auto &trackEngine = _engine.selectedTrackEngine().as<NoteTrackEngine>();
-    const auto &sequence = _project.selectedNoteSequence();
+    auto &sequence = _project.selectedNoteSequence();
     int currentStep = trackEngine.isActiveSequence(sequence) ? trackEngine.currentStep() : -1;
 
     for (int i = 0; i < 16; ++i) {
@@ -259,7 +330,7 @@ void NoteSequenceEditPage::updateLeds(Leds &leds) {
         leds.set(MatrixMap::fromStep(i), red, green);
     }
 
-    LedPainter::drawSelectedSequenceSection(leds, _section);
+    LedPainter::drawSelectedSequenceSection(leds, sequence.section());
 
     // show quick edit keys
     if (globalKeyState()[Key::Page] && !globalKeyState()[Key::Shift]) {
@@ -269,6 +340,10 @@ void NoteSequenceEditPage::updateLeds(Leds &leds) {
             leds.set(index, false, quickEditItems[i] != NoteSequenceListModel::Item::Last);
             leds.mask(index);
         }
+        int index = MatrixMap::fromStep(15);
+        leds.unmask(index);
+        leds.set(index, false, true);
+        leds.mask(index);
     }
 }
 
@@ -285,6 +360,9 @@ void NoteSequenceEditPage::keyUp(KeyEvent &event) {
 void NoteSequenceEditPage::keyPress(KeyPressEvent &event) {
     const auto &key = event.key();
     auto &sequence = _project.selectedNoteSequence();
+    auto &track = _project.selectedTrack().noteTrack();
+
+    auto &trackEngine = _engine.selectedTrackEngine().as<NoteTrackEngine>();
 
     if (key.isContextMenu()) {
         contextShow();
@@ -293,7 +371,21 @@ void NoteSequenceEditPage::keyPress(KeyPressEvent &event) {
     }
 
     if (key.isQuickEdit()) {
-        quickEdit(key.quickEdit());
+         if (key.is(Key::Step15)) {
+            bool lpConnected = _engine.isLaunchpadConnected();
+
+             track.togglePatternFollowDisplay(lpConnected);
+        } else {
+            _inMemorySequence = _project.selectedNoteSequence();
+            quickEdit(key.quickEdit());
+        }
+        event.consume();
+        return;
+    }
+
+    if (key.pageModifier() && key.is(Key::Step6)) {
+        // undo function
+        _project.setSelectedNoteSequence(_inMemorySequence);
         event.consume();
         return;
     }
@@ -302,6 +394,43 @@ void NoteSequenceEditPage::keyPress(KeyPressEvent &event) {
         return;
     }
 
+
+    if (key.isFunction()) {
+        int v = 0;
+        switch (key.code()) {
+            case Key::F0:
+                v=1;
+                break;
+            case Key::F1:
+                v=2;
+                break;
+            case Key::F2:
+                v=3;
+                break;
+            case Key::F3:
+                v=4;
+                break;
+            case Key::F4:
+                v=5;
+                break;
+        }
+        for (int i=0; i<16; ++i) {
+           if (key.state(i)) {
+                const auto &scale = sequence.selectedScale(_project.scale());
+                int stepIndex = 0;
+                if (i>=8) {
+                    stepIndex = i -8;
+                } else {
+                    stepIndex = i+8;
+                }
+                sequence.step(stepIndex).setNote(scale.notesPerOctave()*v);
+                event.consume();
+                return;
+
+           }
+        }
+
+    }
     _stepSelection.keyPress(event, stepOffset());
     updateMonitorStep();
 
@@ -309,6 +438,7 @@ void NoteSequenceEditPage::keyPress(KeyPressEvent &event) {
         int stepIndex = stepOffset() + key.step();
         switch (layer()) {
         case Layer::Gate:
+            _inMemorySequence = _project.selectedNoteSequence();
             sequence.step(stepIndex).toggleGate();
             event.consume();
             break;
@@ -317,32 +447,76 @@ void NoteSequenceEditPage::keyPress(KeyPressEvent &event) {
         }
     }
 
+    KeyPressEvent keyPressEvent =_keyPressEventTracker.process(key);
+
+    if (!key.shiftModifier() && key.isStep() && keyPressEvent.count() == 2) {
+        int stepIndex = stepOffset() + key.step();
+        if (layer() != Layer::Gate) {
+            _inMemorySequence = _project.selectedNoteSequence();
+            sequence.step(stepIndex).toggleGate();
+            event.consume();
+        }
+    }
+
     if (key.isFunction()) {
+        if(key.shiftModifier() && key.function() == 2 && _stepSelection.any()) {
+            _inMemorySequence = _project.selectedNoteSequence();
+            tieNotes();
+            event.consume();
+            return;
+        }
         switchLayer(key.function(), key.shiftModifier());
         event.consume();
     }
 
     if (key.isEncoder()) {
+        track.setPatternFollowDisplay(false);
+        _inMemorySequence = _project.selectedNoteSequence();
         if (!_showDetail && _stepSelection.any() && allSelectedStepsActive()) {
             setSelectedStepsGate(false);
         } else {
             setSelectedStepsGate(true);
         }
+        event.consume();
     }
+
 
     if (key.isLeft()) {
         if (key.shiftModifier()) {
-            sequence.shiftSteps(_stepSelection.selected(), -1);
+            if (trackEngine.currentRecordStep()!=-1) {
+                if (Routing::isRouted(Routing::Target::CurrentRecordStep, _model.project().selectedTrackIndex())) {
+                    sequence.setCurrentRecordStep(sequence.currentRecordStep()-1, true);
+                } else {
+                    sequence.setCurrentRecordStep(sequence.currentRecordStep()-1, false);
+                }
+            } else {
+                _inMemorySequence = _project.selectedNoteSequence();
+                sequence.shiftSteps(_stepSelection.selected(), -1);
+                _stepSelection.shiftLeft(sequence.firstStep(), sequence.lastStep()+1);
+            }
         } else {
-            _section = std::max(0, _section - 1);
+             track.setPatternFollowDisplay(false);
+             sequence.setSecion(std::max(0, sequence.section() - 1));
         }
         event.consume();
     }
     if (key.isRight()) {
         if (key.shiftModifier()) {
-            sequence.shiftSteps(_stepSelection.selected(), 1);
+            if (trackEngine.currentRecordStep()!=-1) {
+                if (Routing::isRouted(Routing::Target::CurrentRecordStep, _model.project().selectedTrackIndex())) {
+                    sequence.setCurrentRecordStep(sequence.currentRecordStep()+1, true);
+                } else {
+                    sequence.setCurrentRecordStep(sequence.currentRecordStep()+1, false);
+                }
+
+            } else {
+                _inMemorySequence = _project.selectedNoteSequence();
+                sequence.shiftSteps(_stepSelection.selected(), 1);
+                _stepSelection.shiftRight(sequence.firstStep(), sequence.lastStep()+1);
+            }
         } else {
-            _section = std::min(3, _section + 1);
+            track.setPatternFollowDisplay(false);
+            sequence.setSecion(std::min(3, sequence.section() + 1));
         }
         event.consume();
     }
@@ -352,11 +526,63 @@ void NoteSequenceEditPage::encoder(EncoderEvent &event) {
     auto &sequence = _project.selectedNoteSequence();
     const auto &scale = sequence.selectedScale(_project.scale());
 
-    if (_stepSelection.any()) {
+    if (!_stepSelection.any())
+    {
+        switch (layer())
+        {
+        case Layer::Gate:
+            setLayer(event.value() > 0 ? Layer::GateOffset : Layer::GateProbability);
+            break;
+        case Layer::GateOffset:
+            setLayer(event.value() > 0 ? Layer::GateProbability : Layer::Gate);
+            break;
+        case Layer::GateProbability:
+            setLayer(event.value() > 0 ? Layer::Gate : Layer::GateOffset);
+            break;
+        case Layer::Retrigger:
+            setLayer(event.value() > 0 ? Layer::RetriggerProbability : Layer::StageRepeatsMode);
+            break;
+        case Layer::RetriggerProbability:
+            setLayer(event.value() > 0 ? Layer::StageRepeats : Layer::Retrigger);
+            break;
+        case Layer::StageRepeats:
+            setLayer(event.value() > 0 ? Layer::StageRepeatsMode : Layer::RetriggerProbability);
+            break;
+        case Layer::StageRepeatsMode:
+            setLayer(event.value() > 0 ? Layer::Retrigger : Layer::StageRepeats);
+            break;
+        case Layer::Length:
+            setLayer(event.value() > 0 ? Layer::LengthVariationRange : Layer::LengthVariationProbability);
+            break;
+        case Layer::LengthVariationRange:
+            setLayer(event.value() > 0 ? Layer::LengthVariationProbability : Layer::Length);
+            break;
+        case Layer::LengthVariationProbability:
+            setLayer(event.value() > 0 ? Layer::Length : Layer::LengthVariationRange);
+            break;
+        case Layer::Note:
+            setLayer(event.value() > 0 ? Layer::NoteVariationRange : Layer::BypassScale);
+            break;
+        case Layer::NoteVariationRange:
+            setLayer(event.value() > 0 ? Layer::NoteVariationProbability : Layer::Note);
+            break;
+        case Layer::NoteVariationProbability:
+            setLayer(event.value() > 0 ? Layer::Slide : Layer::NoteVariationRange);
+            break;
+        case Layer::Slide:
+            setLayer(event.value() > 0 ? Layer::BypassScale : Layer::NoteVariationProbability);
+            break;
+        case Layer::BypassScale:
+            setLayer(event.value() > 0 ? Layer::Note : Layer::Slide);
+        default:
+            break;
+        }
+        return;
+    }
+    else
+    {
         _showDetail = true;
         _showDetailTicks = os::ticks();
-    } else {
-        return;
     }
 
     for (size_t stepIndex = 0; stepIndex < sequence.steps().size(); ++stepIndex) {
@@ -402,8 +628,21 @@ void NoteSequenceEditPage::encoder(EncoderEvent &event) {
             case Layer::Slide:
                 step.setSlide(event.value() > 0);
                 break;
+            case Layer::BypassScale:
+                step.setBypassScale(event.value() > 0);
+                break;
             case Layer::Condition:
                 step.setCondition(ModelUtils::adjustedEnum(step.condition(), event.value()));
+                break;
+            case Layer::StageRepeats:
+                step.setStageRepeats(step.stageRepeats() + event.value());
+                break;
+            case Layer::StageRepeatsMode:
+                step.setStageRepeatsMode(
+                    static_cast<Types::StageRepeatMode>(
+                        step.stageRepeatMode() + event.value()
+                    )
+                );
                 break;
             case Layer::Last:
                 break;
@@ -416,6 +655,9 @@ void NoteSequenceEditPage::encoder(EncoderEvent &event) {
 
 void NoteSequenceEditPage::midi(MidiEvent &event) {
     if (!_engine.recording() && layer() == Layer::Note && _stepSelection.any()) {
+        if (_project.clockSetup().filterNote()) {
+            return;
+        }
         auto &trackEngine = _engine.selectedTrackEngine().as<NoteTrackEngine>();
         auto &sequence = _project.selectedNoteSequence();
         const auto &scale = sequence.selectedScale(_project.scale());
@@ -440,19 +682,26 @@ void NoteSequenceEditPage::midi(MidiEvent &event) {
 }
 
 void NoteSequenceEditPage::switchLayer(int functionKey, bool shift) {
+
+    auto engine = _engine.selectedTrackEngine().as<NoteTrackEngine>();
+
     if (shift) {
         switch (Function(functionKey)) {
         case Function::Gate:
             setLayer(Layer::Gate);
             break;
         case Function::Retrigger:
-            setLayer(Layer::Retrigger);
+            if (engine.playMode() == Types::PlayMode::Free) {
+                setLayer(Layer::StageRepeats);
+            }
             break;
         case Function::Length:
-            setLayer(Layer::Length);
+            if (engine.playMode() == Types::PlayMode::Free) {
+                setLayer(Layer::StageRepeatsMode);
+            }
             break;
         case Function::Note:
-            setLayer(Layer::Note);
+            setLayer(Layer::Slide);
             break;
         case Function::Condition:
             setLayer(Layer::Condition);
@@ -465,13 +714,10 @@ void NoteSequenceEditPage::switchLayer(int functionKey, bool shift) {
     case Function::Gate:
         switch (layer()) {
         case Layer::Gate:
-            setLayer(Layer::GateProbability);
-            break;
-        case Layer::GateProbability:
             setLayer(Layer::GateOffset);
             break;
         case Layer::GateOffset:
-            setLayer(Layer::Slide);
+            setLayer(Layer::GateProbability);
             break;
         default:
             setLayer(Layer::Gate);
@@ -483,7 +729,25 @@ void NoteSequenceEditPage::switchLayer(int functionKey, bool shift) {
         case Layer::Retrigger:
             setLayer(Layer::RetriggerProbability);
             break;
+        case Layer::RetriggerProbability:
+            if (engine.playMode() == Types::PlayMode::Free) {
+                setLayer(Layer::StageRepeats);
+                break;
+            }
+
+        case Layer::StageRepeats:
+            if (engine.playMode() == Types::PlayMode::Free) {
+                setLayer(Layer::StageRepeatsMode);
+                break;
+            }
+        case Layer::StageRepeatsMode:
+            setLayer(Layer::Retrigger);
+            break;
         default:
+            if (engine.playMode() == Types::PlayMode::Free) {
+                setLayer(Layer::StageRepeats);
+                break;
+            }
             setLayer(Layer::Retrigger);
             break;
         }
@@ -509,6 +773,12 @@ void NoteSequenceEditPage::switchLayer(int functionKey, bool shift) {
         case Layer::NoteVariationRange:
             setLayer(Layer::NoteVariationProbability);
             break;
+        case Layer::NoteVariationProbability:
+            setLayer(Layer::Slide);
+            break;
+        case Layer::Slide:
+            setLayer(Layer::BypassScale);
+            break;
         default:
             setLayer(Layer::Note);
             break;
@@ -525,10 +795,11 @@ int NoteSequenceEditPage::activeFunctionKey() {
     case Layer::Gate:
     case Layer::GateProbability:
     case Layer::GateOffset:
-    case Layer::Slide:
         return 0;
     case Layer::Retrigger:
     case Layer::RetriggerProbability:
+    case Layer::StageRepeats:
+    case Layer::StageRepeatsMode:
         return 1;
     case Layer::Length:
     case Layer::LengthVariationRange:
@@ -537,6 +808,8 @@ int NoteSequenceEditPage::activeFunctionKey() {
     case Layer::Note:
     case Layer::NoteVariationRange:
     case Layer::NoteVariationProbability:
+    case Layer::Slide:
+    case Layer::BypassScale:
         return 3;
     case Layer::Condition:
         return 4;
@@ -583,12 +856,13 @@ void NoteSequenceEditPage::drawDetail(Canvas &canvas, const NoteSequence::Step &
     switch (layer()) {
     case Layer::Gate:
     case Layer::Slide:
+    case Layer::BypassScale:
         break;
     case Layer::GateProbability:
         SequencePainter::drawProbability(
             canvas,
             64 + 32 + 8, 32 - 4, 64 - 16, 8,
-            step.gateProbability() + 1, NoteSequence::GateProbability::Range
+            step.gateProbability(), NoteSequence::GateProbability::Range-1
         );
         str.reset();
         str("%.1f%%", 100.f * (step.gateProbability() + 1.f) / NoteSequence::GateProbability::Range);
@@ -621,7 +895,7 @@ void NoteSequenceEditPage::drawDetail(Canvas &canvas, const NoteSequence::Step &
         SequencePainter::drawProbability(
             canvas,
             64 + 32 + 8, 32 - 4, 64 - 16, 8,
-            step.retriggerProbability() + 1, NoteSequence::RetriggerProbability::Range
+            step.retriggerProbability(), NoteSequence::RetriggerProbability::Range-1
         );
         str.reset();
         str("%.1f%%", 100.f * (step.retriggerProbability() + 1.f) / NoteSequence::RetriggerProbability::Range);
@@ -654,7 +928,7 @@ void NoteSequenceEditPage::drawDetail(Canvas &canvas, const NoteSequence::Step &
         SequencePainter::drawProbability(
             canvas,
             64 + 32 + 8, 32 - 4, 64 - 16, 8,
-            step.lengthVariationProbability() + 1, NoteSequence::LengthVariationProbability::Range
+            step.lengthVariationProbability(), NoteSequence::LengthVariationProbability::Range-1
         );
         str.reset();
         str("%.1f%%", 100.f * (step.lengthVariationProbability() + 1.f) / NoteSequence::LengthVariationProbability::Range);
@@ -677,7 +951,7 @@ void NoteSequenceEditPage::drawDetail(Canvas &canvas, const NoteSequence::Step &
         SequencePainter::drawProbability(
             canvas,
             64 + 32 + 8, 32 - 4, 64 - 16, 8,
-            step.noteVariationProbability() + 1, NoteSequence::NoteVariationProbability::Range
+            step.noteVariationProbability(), NoteSequence::NoteVariationProbability::Range-1
         );
         str.reset();
         str("%.1f%%", 100.f * (step.noteVariationProbability() + 1.f) / NoteSequence::NoteVariationProbability::Range);
@@ -689,6 +963,46 @@ void NoteSequenceEditPage::drawDetail(Canvas &canvas, const NoteSequence::Step &
         Types::printCondition(str, step.condition(), Types::ConditionFormat::Long);
         canvas.setFont(Font::Small);
         canvas.drawTextCentered(64 + 32, 16, 96, 32, str);
+        break;
+    case Layer::StageRepeats:
+        str.reset();
+        str("x%d", step.stageRepeats()+1);
+        canvas.setFont(Font::Small);
+        canvas.drawTextCentered(64 + 32, 16, 64, 32, str);
+        break;
+     case Layer::StageRepeatsMode:
+        str.reset();
+        switch (step.stageRepeatMode()) {
+            case Types::Each:
+                str("EACH");
+                break;
+            case Types::First:
+                str("FIRST");
+                break;
+            case Types::Middle:
+                str("MIDDLE");
+                break;
+            case Types::Last:
+                str("LAST");
+                break;
+            case Types::Odd:
+                str("ODD");
+                break;
+            case Types::Even:
+                str("EVEN");
+                break;
+            case Types::Triplets:
+                str("TRIPLET");
+                break;
+            case Types::Random:
+                str("RANDOM");
+                break;
+
+            default:
+                break;
+        }
+        canvas.setFont(Font::Small);
+        canvas.drawTextCentered(64 + 32, 16, 64, 32, str);
         break;
     case Layer::Last:
         break;
@@ -736,7 +1050,7 @@ bool NoteSequenceEditPage::contextActionEnabled(int index) const {
 }
 
 void NoteSequenceEditPage::initSequence() {
-    _project.selectedNoteSequence().clearSteps();
+    _project.selectedNoteSequence().clearStepsSelected(_stepSelection.selected());
     showMessage("STEPS INITIALIZED");
 }
 
@@ -755,13 +1069,47 @@ void NoteSequenceEditPage::duplicateSequence() {
     showMessage("STEPS DUPLICATED");
 }
 
+
+void NoteSequenceEditPage::tieNotes() {
+
+    auto &sequence = _project.selectedNoteSequence();
+
+    if (_stepSelection.any()) {
+        int first=-1;
+        int last=-1;
+
+        for (size_t i = 0; i < sequence.steps().size(); ++i) {
+            if (_stepSelection[i]) {
+                if (first == -1 ) {
+                    first = i;
+                }
+                last = i;
+            }
+        }
+
+        for (int i = first; i <= last; i++) {
+            sequence.step(i).setGate(true);
+            if (i != last) {
+                sequence.step(i).setLength(NoteSequence::Length::Max);
+                showMessage("NOTES TIED");
+            }
+            sequence.step(i).setNote(sequence.step(first).note());
+        }
+    }
+}
+
 void NoteSequenceEditPage::generateSequence() {
     _manager.pages().generatorSelect.show([this] (bool success, Generator::Mode mode) {
         if (success) {
             auto builder = _builderContainer.create<NoteSequenceBuilder>(_project.selectedNoteSequence(), layer());
-            auto generator = Generator::execute(mode, *builder);
+
+            if (_stepSelection.none()) {
+                _stepSelection.selectAll();
+            }
+
+            auto generator = Generator::execute(mode, *builder, _stepSelection.selected());
             if (generator) {
-                _manager.pages().generator.show(generator);
+                _manager.pages().generator.show(generator, &_stepSelection);
             }
         }
     });

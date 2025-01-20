@@ -1,6 +1,7 @@
 #include "FileManager.h"
 #include "ProjectVersion.h"
 
+#include "Routing.h"
 #include "core/utils/StringBuilder.h"
 #include "core/fs/FileSystem.h"
 #include "core/fs/FileWriter.h"
@@ -30,6 +31,10 @@ struct FileTypeInfo {
 FileTypeInfo fileTypeInfos[] = {
     { "PROJECTS", "PRO" },
     { "SCALES", "SCA" },
+    {"SEQS", "NSQ"},
+    {"SEQS", "CSQ"},
+    {"SEQS", "LSQ"},
+    {"SEQS", "ASQ"}
 };
 
 static void slotPath(StringBuilder &str, FileType type, int slot) {
@@ -102,6 +107,55 @@ fs::Error FileManager::writeUserScale(const UserScale &userScale, int slot) {
 fs::Error FileManager::readUserScale(UserScale &userScale, int slot) {
     return readFile(FileType::UserScale, slot, [&] (const char *path) {
         return readUserScale(userScale, path);
+    });
+}
+
+
+fs::Error FileManager::writeNoteSequence(const NoteSequence &noteSequence, int slot) {
+    return writeFile(FileType::NoteSequence, slot, [&] (const char *path) {
+        return writeNoteSequence(noteSequence, path);
+    });
+}
+
+fs::Error FileManager::readNoteSequence(NoteSequence &noteSequence, int slot) {
+    return readFile(FileType::NoteSequence, slot, [&] (const char *path) {
+        return readNoteSequence(noteSequence, path);
+    });
+}
+
+fs::Error FileManager::writeCurveSequence(const CurveSequence &curveSequence, int slot) {
+    return writeFile(FileType::CurveSequence, slot, [&] (const char *path) {
+        return writeCurveSequence(curveSequence, path);
+    });
+}
+
+fs::Error FileManager::readCurveSequence(CurveSequence &curveSequence, int slot) {
+    return readFile(FileType::CurveSequence, slot, [&] (const char *path) {
+        return readCurveSequence(curveSequence, path);
+    });
+}
+
+fs::Error FileManager::writeLogicSequence(const LogicSequence &noteSequence, int slot) {
+    return writeFile(FileType::LogicSequence, slot, [&] (const char *path) {
+        return writeLogicSequence(noteSequence, path);
+    });
+}
+
+fs::Error FileManager::readLogicSequence(LogicSequence &noteSequence, int slot) {
+    return readFile(FileType::LogicSequence, slot, [&] (const char *path) {
+        return readLogicSequence(noteSequence, path);
+    });
+}
+
+fs::Error FileManager::writeArpSequence(const ArpSequence &noteSequence, int slot) {
+    return writeFile(FileType::ArpSequence, slot, [&] (const char *path) {
+        return writeArpSequence(noteSequence, path);
+    });
+}
+
+fs::Error FileManager::readArpSequence(ArpSequence &noteSequence, int slot) {
+    return readFile(FileType::ArpSequence, slot, [&] (const char *path) {
+        return readArpSequence(noteSequence, path);
     });
 }
 
@@ -182,6 +236,178 @@ fs::Error FileManager::readUserScale(UserScale &userScale, const char *path) {
     );
 
     bool success = userScale.read(reader);
+
+    auto error = fileReader.finish();
+    if (error == fs::OK && !success) {
+        error = fs::INVALID_CHECKSUM;
+    }
+
+    return error;
+}
+
+fs::Error FileManager::writeNoteSequence(const NoteSequence &noteSequence, const char *path) {
+    fs::FileWriter fileWriter(path);
+    if (fileWriter.error() != fs::OK) {
+        return fileWriter.error();
+    }
+
+    FileHeader header(FileType::NoteSequence, 0, noteSequence.name());
+    fileWriter.write(&header, sizeof(header));
+
+    VersionedSerializedWriter writer(
+        [&fileWriter] (const void *data, size_t len) { fileWriter.write(data, len); },
+        ProjectVersion::Latest
+    );
+
+    noteSequence.write(writer);
+
+    return fileWriter.finish();
+}
+
+fs::Error FileManager::readNoteSequence(NoteSequence &noteSequence, const char *path) {
+    fs::FileReader fileReader(path);
+    if (fileReader.error() != fs::OK) {
+        return fileReader.error();
+    }
+
+    FileHeader header;
+    fileReader.read(&header, sizeof(header));
+
+    VersionedSerializedReader reader(
+        [&fileReader] (void *data, size_t len) { fileReader.read(data, len); },
+        ProjectVersion::Latest
+    );
+
+    bool success = noteSequence.read(reader);
+
+    auto error = fileReader.finish();
+    if (error == fs::OK && !success) {
+        error = fs::INVALID_CHECKSUM;
+    }
+
+    return error;
+}
+
+fs::Error FileManager::writeCurveSequence(const CurveSequence &curveSequence, const char *path) {
+    fs::FileWriter fileWriter(path);
+    if (fileWriter.error() != fs::OK) {
+        return fileWriter.error();
+    }
+
+    FileHeader header(FileType::CurveSequence, 0, curveSequence.name());
+    fileWriter.write(&header, sizeof(header));
+
+    VersionedSerializedWriter writer(
+        [&fileWriter] (const void *data, size_t len) { fileWriter.write(data, len); },
+        ProjectVersion::Latest
+    );
+
+    curveSequence.write(writer);
+
+    return fileWriter.finish();
+}
+
+fs::Error FileManager::readCurveSequence(CurveSequence &curveSequence, const char *path) {
+    fs::FileReader fileReader(path);
+    if (fileReader.error() != fs::OK) {
+        return fileReader.error();
+    }
+
+    FileHeader header;
+    fileReader.read(&header, sizeof(header));
+
+    VersionedSerializedReader reader(
+        [&fileReader] (void *data, size_t len) { fileReader.read(data, len); },
+        ProjectVersion::Latest
+    );
+
+    bool success = curveSequence.read(reader);
+
+    auto error = fileReader.finish();
+    if (error == fs::OK && !success) {
+        error = fs::INVALID_CHECKSUM;
+    }
+
+    return error;
+}
+
+fs::Error FileManager::writeLogicSequence(const LogicSequence &noteSequence, const char *path) {
+    fs::FileWriter fileWriter(path);
+    if (fileWriter.error() != fs::OK) {
+        return fileWriter.error();
+    }
+
+    FileHeader header(FileType::LogicSequence, 0, noteSequence.name());
+    fileWriter.write(&header, sizeof(header));
+
+    VersionedSerializedWriter writer(
+        [&fileWriter] (const void *data, size_t len) { fileWriter.write(data, len); },
+        ProjectVersion::Latest
+    );
+
+    noteSequence.write(writer);
+
+    return fileWriter.finish();
+}
+
+fs::Error FileManager::readLogicSequence(LogicSequence &noteSequence, const char *path) {
+    fs::FileReader fileReader(path);
+    if (fileReader.error() != fs::OK) {
+        return fileReader.error();
+    }
+
+    FileHeader header;
+    fileReader.read(&header, sizeof(header));
+
+    VersionedSerializedReader reader(
+        [&fileReader] (void *data, size_t len) { fileReader.read(data, len); },
+        ProjectVersion::Latest
+    );
+
+    bool success = noteSequence.read(reader);
+
+    auto error = fileReader.finish();
+    if (error == fs::OK && !success) {
+        error = fs::INVALID_CHECKSUM;
+    }
+
+    return error;
+}
+
+fs::Error FileManager::writeArpSequence(const ArpSequence &noteSequence, const char *path) {
+    fs::FileWriter fileWriter(path);
+    if (fileWriter.error() != fs::OK) {
+        return fileWriter.error();
+    }
+
+    FileHeader header(FileType::ArpSequence, 0, noteSequence.name());
+    fileWriter.write(&header, sizeof(header));
+
+    VersionedSerializedWriter writer(
+        [&fileWriter] (const void *data, size_t len) { fileWriter.write(data, len); },
+        ProjectVersion::Latest
+    );
+
+    noteSequence.write(writer);
+
+    return fileWriter.finish();
+}
+
+fs::Error FileManager::readArpSequence(ArpSequence &noteSequence, const char *path) {
+    fs::FileReader fileReader(path);
+    if (fileReader.error() != fs::OK) {
+        return fileReader.error();
+    }
+
+    FileHeader header;
+    fileReader.read(&header, sizeof(header));
+
+    VersionedSerializedReader reader(
+        [&fileReader] (void *data, size_t len) { fileReader.read(data, len); },
+        ProjectVersion::Latest
+    );
+
+    bool success = noteSequence.read(reader);
 
     auto error = fileReader.finish();
     if (error == fs::OK && !success) {

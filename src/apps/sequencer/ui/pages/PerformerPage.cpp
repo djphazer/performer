@@ -16,6 +16,8 @@ enum class Function {
     Cancel  = 4
 };
 
+float _projectTempo;
+
 PerformerPage::PerformerPage(PageManager &manager, PageContext &context) :
     BasePage(manager, context)
 {}
@@ -23,6 +25,7 @@ PerformerPage::PerformerPage(PageManager &manager, PageContext &context) :
 void PerformerPage::enter() {
     _latching = false;
     _syncing = false;
+    _projectTempo = _project.originalTempo();
 }
 
 void PerformerPage::exit() {
@@ -112,6 +115,10 @@ void PerformerPage::updateLeds(Leds &leds) {
 void PerformerPage::keyDown(KeyEvent &event) {
     const auto &key = event.key();
 
+    if (key.isEncoder() && !isKeySelected()) {
+        _project.setTempo(_projectTempo);
+    }
+
     if (key.isFunction()) {
         switch (Function(key.function())) {
         case Function::Latch:
@@ -184,6 +191,7 @@ void PerformerPage::keyUp(KeyEvent &event) {
 
 void PerformerPage::keyPress(KeyPressEvent &event) {
     const auto &key = event.key();
+
     auto &playState = _project.playState();
 
     if (key.pageModifier()) {
@@ -216,7 +224,7 @@ void PerformerPage::keyPress(KeyPressEvent &event) {
 
     if (key.isTrackSelect()) {
         if (key.shiftModifier()) {
-            playState.soloTrack(key.track(), executeType);
+            playState.toggleSoloTrack(key.track(), executeType);
         } else {
             playState.toggleMuteTrack(key.track(), executeType);
         }
@@ -225,9 +233,14 @@ void PerformerPage::keyPress(KeyPressEvent &event) {
 }
 
 void PerformerPage::encoder(EncoderEvent &event) {
-    for (int trackIndex = 0; trackIndex < 8; ++trackIndex) {
-        if (pageKeyState()[MatrixMap::fromStep(trackIndex)]) {
-            _project.playState().trackState(trackIndex).editFillAmount(event.value(), false);
+
+    if (!isKeySelected()) {
+        _project.setTempo(_project.tempo()+event.value());
+    } else {
+        for (int trackIndex = 0; trackIndex < 8; ++trackIndex) {
+            if (pageKeyState()[MatrixMap::fromStep(trackIndex)]) {
+                _project.playState().trackState(trackIndex).editFillAmount(event.value(), false);
+            }
         }
     }
 }
@@ -241,4 +254,13 @@ void PerformerPage::updateFills() {
         bool trackFill = pageKeyState()[MatrixMap::fromStep(8 + trackIndex)];
         playState.fillTrack(trackIndex, trackFill || fillPressed, holdPressed);
     }
+}
+
+bool PerformerPage::isKeySelected() {
+    for (int trackIndex = 0; trackIndex < 8; ++trackIndex) {
+        if (pageKeyState()[MatrixMap::fromStep(trackIndex)]) {
+            return true;
+        }
+    }
+    return false;
 }

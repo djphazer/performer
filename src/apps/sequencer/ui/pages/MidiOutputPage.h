@@ -26,8 +26,9 @@ private:
     void showOutput(int outputIndex);
     void selectOutput(int outputIndex);
 
+    MidiOutput::Output _editOutput;
     OutputListModel _outputListModel;
     MidiOutput::Output *_output;
     uint8_t _outputIndex;
-    MidiOutput::Output _editOutput;
+
 };

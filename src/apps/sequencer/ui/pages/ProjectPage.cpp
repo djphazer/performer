@@ -31,6 +31,7 @@ ProjectPage::ProjectPage(PageManager &manager, PageContext &context) :
 {}
 
 void ProjectPage::enter() {
+    _listModel.resetScale();
 }
 
 void ProjectPage::exit() {
@@ -73,6 +74,13 @@ void ProjectPage::keyPress(KeyPressEvent &event) {
         });
 
         return;
+    }
+
+    if (key.isEncoder()) {
+        auto row = ListPage::selectedRow();
+        if (row == 5) {
+            _listModel.setSelectedScale();
+        }
     }
 
     ListPage::keyPress(event);
@@ -130,6 +138,7 @@ void ProjectPage::initProject() {
     _manager.pages().confirmation.show("ARE YOU SURE?", [this] (bool result) {
         if (result) {
             _engine.suspend();
+            _listModel.initScale();
             _project.clear();
             showMessage("PROJECT INITIALIZED");
             _engine.resume();

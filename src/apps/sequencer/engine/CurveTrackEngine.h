@@ -9,7 +9,7 @@
 
 class CurveTrackEngine : public TrackEngine {
 public:
-    CurveTrackEngine(Engine &engine, const Model &model, Track &track, const TrackEngine *linkedTrackEngine) :
+    CurveTrackEngine(Engine &engine, Model &model, Track &track, const TrackEngine *linkedTrackEngine) :
         TrackEngine(engine, model, track, linkedTrackEngine),
         _curveTrack(track.curveTrack())
     {
@@ -44,6 +44,10 @@ public:
 
     void setMonitorStep(int index) { _monitorStepIndex = (index >= 0 && index < CONFIG_STEP_COUNT) ? index : -1; }
     void setMonitorStepLevel(MonitorLevel level) { _monitorStepLevel = level; }
+
+    SequenceState sequenceState() {
+        return _sequenceState;
+    }
 
 private:
     void triggerStep(uint32_t tick, uint32_t divisor);

@@ -19,11 +19,11 @@ public:
     static void drawFunctionKeys(Canvas &canvas, const char *names[], const KeyState &keyState, int highlight = -1);
 
     static void drawClock(Canvas &canvas, const Engine &engine);
-    static void drawActiveState(Canvas &canvas, int track, int playPattern, int editPattern, bool snapshotActive, bool songActive);
-    static void drawActiveMode(Canvas &canvas, const char *mode);
+    static void drawActiveState(Canvas &canvas, int track, const char *trackName, int playPattern, int editPattern, bool snapshotActive, bool songActive);
+    static void drawActiveMode(Canvas &canvas, const char *mode, const char *flags=NULL);
     static void drawActiveFunction(Canvas &canvas, const char *function);
 
-    static void drawHeader(Canvas &canvas, const Model &model, const Engine &engine, const char *mode);
+    static void drawHeader(Canvas &canvas, const Model &model, const Engine &engine, const char *mode, const char *flags=NULL);
     static void drawFooter(Canvas &canvas);
     static void drawFooter(Canvas &canvas, const char *names[], const KeyState &keyState, int highlight = -1);
 

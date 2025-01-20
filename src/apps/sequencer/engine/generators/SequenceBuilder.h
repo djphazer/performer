@@ -2,6 +2,9 @@
 
 #include "model/NoteSequence.h"
 #include "model/CurveSequence.h"
+#include "model/StochasticSequence.h"
+#include "model/LogicSequence.h"
+#include "model/ArpSequence.h"
 
 class SequenceBuilder {
 public:
@@ -93,3 +96,6 @@ private:
 
 using NoteSequenceBuilder = SequenceBuilderImpl<NoteSequence>;
 using CurveSequenceBuilder = SequenceBuilderImpl<CurveSequence>;
+using StochasticSequenceBuilder = SequenceBuilderImpl<StochasticSequence>;
+using LogicSequenceBuilder = SequenceBuilderImpl<LogicSequence>;
+using ArpSequenceBuilder = SequenceBuilderImpl<ArpSequence>;

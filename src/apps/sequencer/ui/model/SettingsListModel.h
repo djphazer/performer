@@ -13,6 +13,9 @@ public:
     {}
 
     int rows() const override {
+        if (!_isLaunchpad) {
+            return _userSettings.all().size()-2;
+        }
         return _userSettings.all().size();
     }
 
@@ -21,6 +24,9 @@ public:
     }
 
     void cell(int row, int column, StringBuilder &str) const override {
+        if (!_isLaunchpad && row > 5) {
+            return;
+        }
         if (column == 0) {
             str("%s", _userSettings.get(row)->getMenuItem().c_str());
         } else if (column == 1) {
@@ -34,6 +40,12 @@ public:
         }
     }
 
+    void setIsLaunchopad(bool value) {
+        _isLaunchpad = value;
+    }
+
 private:
     UserSettings &_userSettings;
+
+    bool _isLaunchpad = false;
 };

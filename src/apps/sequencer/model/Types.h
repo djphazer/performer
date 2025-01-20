@@ -83,6 +83,18 @@ public:
         Last
     };
 
+    enum StageRepeatMode {
+        Each,
+        First,
+        Middle,
+        Last,
+        Odd,
+        Even,
+        Triplets,
+        Random,
+
+    };
+
     static const char *cvGateInputName(CvGateInput cvGateInput) {
         switch (cvGateInput) {
         case CvGateInput::Off:      return "Off";
@@ -155,6 +167,39 @@ public:
         }
         return nullptr;
     }
+
+    // Pattern Follow
+    enum class PatternFollow : uint8_t {
+        Off,
+        Display,
+        LaunchPad,
+        DispAndLP,
+        Last
+    };
+
+    static const char *patternFollowName(PatternFollow patternFollow) {
+        switch (patternFollow) {
+        case PatternFollow::Off:      return "Off";
+        case PatternFollow::Display:      return "Display";
+        case PatternFollow::LaunchPad:      return "LaunchPad";
+        case PatternFollow::DispAndLP:      return "Display+LP";
+        case PatternFollow::Last:         break;
+        }
+        return nullptr;
+    }
+
+    static const char* patternFollowShortRepresentation(PatternFollow patternFollow) {
+        switch (patternFollow) {
+        case PatternFollow::Off:      return nullptr;
+        case Types::PatternFollow::Display:      return "F";
+        case Types::PatternFollow::LaunchPad:    return "F:LP";
+        case Types::PatternFollow::DispAndLP:    return "F:D+LP";
+        case PatternFollow::Last:           break;
+        }
+        return nullptr;
+    }
+
+
 
     // Condition
 
@@ -326,6 +371,8 @@ public:
         static const char *names[] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
         str(names[note]);
     }
+
+
 
     static void printMidiNote(StringBuilder &str, int midiNote) {
         printNote(str, midiNote % 12);

@@ -301,6 +301,23 @@ public:
         ModelUtils::printYesNo(str, usbTx());
     }
 
+    // filterNote
+
+    bool filterNote() const { return _filterNote; }
+    void setFilterNote(bool filterNote) {
+        if (filterNote != _filterNote) {
+            _filterNote = filterNote;
+        }
+    }
+
+    void editFilterNote(int value, bool shift) {
+        setFilterNote(value > 0);
+    }
+
+    void printFilterNote(StringBuilder &str) const {
+        ModelUtils::printYesNo(str, filterNote());
+    }
+
     //----------------------------------------
     // Methods
     //----------------------------------------
@@ -327,4 +344,5 @@ private:
     bool _usbRx;
     bool _usbTx;
     bool _dirty;
+    bool _filterNote;
 };

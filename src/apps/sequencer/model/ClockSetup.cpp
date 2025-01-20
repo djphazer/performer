@@ -15,6 +15,7 @@ void ClockSetup::clear() {
     _usbRx = false;
     _usbTx = false;
     _dirty = true;
+    _filterNote = false;
 }
 
 void ClockSetup::write(VersionedSerializedWriter &writer) const {
@@ -30,6 +31,7 @@ void ClockSetup::write(VersionedSerializedWriter &writer) const {
     writer.write(_midiTx);
     writer.write(_usbRx);
     writer.write(_usbTx);
+    writer.write(_filterNote);
 }
 
 void ClockSetup::read(VersionedSerializedReader &reader) {
@@ -45,4 +47,5 @@ void ClockSetup::read(VersionedSerializedReader &reader) {
     reader.read(_midiTx);
     reader.read(_usbRx);
     reader.read(_usbTx);
+    reader.read(_filterNote, ProjectVersion::Version37);
 }

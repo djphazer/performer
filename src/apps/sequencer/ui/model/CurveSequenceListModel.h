@@ -9,6 +9,7 @@
 class CurveSequenceListModel : public RoutableListModel {
 public:
     enum Item {
+        Name,
         FirstStep,
         LastStep,
         RunMode,
@@ -79,6 +80,7 @@ public:
 private:
     static const char *itemName(Item item) {
         switch (item) {
+        case Name:              return "Name";
         case FirstStep:         return "First Step";
         case LastStep:          return "Last Step";
         case RunMode:           return "Run Mode";
@@ -96,6 +98,9 @@ private:
 
     void formatValue(Item item, StringBuilder &str) const {
         switch (item) {
+        case Name:
+            str(_sequence->name());
+            break;
         case FirstStep:
             _sequence->printFirstStep(str);
             break;
@@ -121,6 +126,8 @@ private:
 
     void editValue(Item item, int value, bool shift) {
         switch (item) {
+        case Name:
+            break;
         case FirstStep:
             _sequence->editFirstStep(value, shift);
             break;
@@ -146,6 +153,8 @@ private:
 
     int indexedCountValue(Item item) const {
         switch (item) {
+        case Name:
+            break;
         case FirstStep:
         case LastStep:
             return 16;
@@ -164,6 +173,8 @@ private:
 
     int indexedValue(Item item) const {
         switch (item) {
+        case Name:
+            break;
         case FirstStep:
             return _sequence->firstStep();
         case LastStep:
@@ -184,6 +195,8 @@ private:
 
     void setIndexedValue(Item item, int index) {
         switch (item) {
+        case Name:
+            break;
         case FirstStep:
             return _sequence->setFirstStep(index);
         case LastStep:

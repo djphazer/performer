@@ -46,6 +46,7 @@ private:
         MidiTx,
         UsbRx,
         UsbTx,
+        FilterNote,
         Last
     };
 
@@ -63,6 +64,7 @@ private:
         case MidiTx:            return "MIDI TX";
         case UsbRx:             return "USB RX";
         case UsbTx:             return "USB TX";
+        case FilterNote:        return "Filter Note";
         case Last:              break;
         }
         return nullptr;
@@ -110,6 +112,9 @@ private:
         case UsbTx:
             _clockSetup.printUsbTx(str);
             break;
+        case FilterNote:
+            _clockSetup.printFilterNote(str);
+            break;
         case Last:
             break;
         }
@@ -152,6 +157,9 @@ private:
             break;
         case UsbTx:
             _clockSetup.editUsbTx(value, shift);
+            break;
+        case FilterNote:
+            _clockSetup.editFilterNote(value, shift);
             break;
         case Last:
             break;

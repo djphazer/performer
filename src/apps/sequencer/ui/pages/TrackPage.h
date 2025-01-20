@@ -5,6 +5,10 @@
 #include "ui/model/NoteTrackListModel.h"
 #include "ui/model/CurveTrackListModel.h"
 #include "ui/model/MidiCvTrackListModel.h"
+#include "ui/model/StochasticTrackListModel.h"
+#include "ui/model/LogicTrackListModel.h"
+#include "ui/model/ArpTrackListModel.h"
+
 
 class TrackPage : public ListPage {
 public:
@@ -34,4 +38,16 @@ private:
     NoteTrackListModel _noteTrackListModel;
     CurveTrackListModel _curveTrackListModel;
     MidiCvTrackListModel _midiCvTrackListModel;
+    StochasticTrackListModel _stochasticTrackListModel;
+    LogicTrackListModel _logicTrackListModel;
+    ArpTrackListModel _arpTrackListModel;
+
+    Track *_track;
+
+    NoteTrack *_noteTrack;
+    CurveTrack *_curveTrack;
+    MidiCvTrack *_midiCvTrack;
+    StochasticTrack *_stochasticTrack;
+    LogicTrack *_logicTrack;
+    ArpTrack *_arpTrack;
 };

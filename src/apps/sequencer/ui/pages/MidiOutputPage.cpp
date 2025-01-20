@@ -1,5 +1,7 @@
 #include "MidiOutputPage.h"
 
+#include "Pages.h"
+
 #include "ui/painters/WindowPainter.h"
 
 #include "core/utils/StringBuilder.h"
@@ -59,9 +61,12 @@ void MidiOutputPage::keyPress(KeyPressEvent &event) {
             setEdit(false);
             break;
         case Function::Commit:
-            *_output = _editOutput;
-            setEdit(false);
-            showMessage("OUTPUT CHANGED");
+            bool showCommit = *_output != _editOutput;
+            if (showCommit) {
+                *_output = _editOutput;
+                setEdit(false);
+                showMessage("OUTPUT CHANGED");
+            }
             break;
         }
         event.consume();

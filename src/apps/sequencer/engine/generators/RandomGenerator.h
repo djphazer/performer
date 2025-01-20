@@ -20,10 +20,10 @@ public:
         uint16_t seed = 0;
         uint8_t smooth = 0;
         int8_t bias = 0;
-        uint8_t scale = 10;
+        uint8_t scale = 5;
     };
 
-    RandomGenerator(SequenceBuilder &builder, Params &params);
+    RandomGenerator(SequenceBuilder &builder, Params &params, SelectedSteps &selected);
 
     Mode mode() const override { return Mode::Random; }
 
@@ -34,6 +34,8 @@ public:
 
     void init() override;
     void update() override;
+
+    void randomizeSeed();
 
     // seed
 
@@ -62,4 +64,5 @@ public:
 private:
     Params &_params;
     GeneratorPattern _pattern;
+    SelectedSteps &_selected;
 };

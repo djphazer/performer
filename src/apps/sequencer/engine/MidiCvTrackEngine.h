@@ -7,7 +7,7 @@
 
 class MidiCvTrackEngine : public TrackEngine {
 public:
-    MidiCvTrackEngine(Engine &engine, const Model &model, Track &track, const TrackEngine *linkedTrackEngine) :
+    MidiCvTrackEngine(Engine &engine, Model &model, Track &track, const TrackEngine *linkedTrackEngine) :
         TrackEngine(engine, model, track, linkedTrackEngine),
         _midiCvTrack(track.midiCvTrack()),
         _arpeggiatorEngine(_midiCvTrack.arpeggiator())

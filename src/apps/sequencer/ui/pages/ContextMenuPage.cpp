@@ -3,18 +3,23 @@
 #include "ui/painters/WindowPainter.h"
 
 #include "core/math/Math.h"
+#include <cstdint>
 
 ContextMenuPage::ContextMenuPage(PageManager &manager, PageContext &context) :
     BasePage(manager, context)
 {}
 
+uint32_t lastTicks;
+
 void ContextMenuPage::show(ContextMenuModel &contextMenuModel, ResultCallback callback) {
     _contextMenuModel = &contextMenuModel;
     _callback = callback;
+    lastTicks = os::ticks();
     BasePage::show();
 }
 
 void ContextMenuPage::draw(Canvas &canvas) {
+
     canvas.setFont(Font::Tiny);
     canvas.setBlendMode(BlendMode::Set);
 

@@ -1,12 +1,17 @@
 #pragma once
 
+#include "BaseTrack.h"
+#include "BaseTrackPatternFollow.h"
 #include "Config.h"
 #include "Types.h"
 #include "CurveSequence.h"
 #include "Serialize.h"
 #include "Routing.h"
+#include "FileDefs.h"
+#include "core/utils/StringUtils.h"
+#include <cstdint>
 
-class CurveTrack {
+class CurveTrack : public BaseTrack, public BaseTrackPatternFollow {
 public:
     //----------------------------------------
     // Types
@@ -194,6 +199,59 @@ public:
         str("%+.1f%%", gateProbabilityBias() * 12.5f);
     }
 
+    // curveCvInput
+
+    Types::CurveCvInput curveCvInput() const { return _curveCvInput; }
+    void setCurveCvInput(Types::CurveCvInput curveCvInput) {
+        _curveCvInput = ModelUtils::clampedEnum(curveCvInput);
+    }
+
+    void editCurveCvInput(int value, bool shift) {
+        _curveCvInput = ModelUtils::adjustedEnum(_curveCvInput, value);
+    }
+
+    void printCurveCvInput(StringBuilder &str) const {
+        str(Types::curveCvInput(_curveCvInput));
+    }
+
+    // min
+
+    float min() const { return _min.get(isRouted(Routing::Target::CurveMin)); }
+    void setMin(float min, bool routed = false) {
+        _min.set(CurveSequence::Min::clamp(min), routed);
+        _max.set(std::max(max(), this->min()), routed);
+    }
+
+    void editMin(float value, bool shift) {
+        if (!isRouted(Routing::Target::CurveMin)) {
+            setMin(min() + value);
+        }
+    }
+
+    void printMin(StringBuilder &str) const {
+        printRouted(str, Routing::Target::CurveMin);
+        str("%+.1f%%", (100*min())/CurveSequence::Min::Max);
+    }
+
+    // max
+
+    float max() const { return _max.get(isRouted(Routing::Target::CurveMax)); }
+    void setMax(float max, bool routed = false) {
+        _max.set(CurveSequence::Max::clamp(max), routed);
+        _min.set(std::min(min(), this->max()), routed);
+    }
+
+    void editMax(float value, bool shift) {
+        if (!isRouted(Routing::Target::CurveMax)) {
+            setMax(max() + value);
+        }
+    }
+
+    void printMax(StringBuilder &str) const {
+        printRouted(str, Routing::Target::CurveMax);
+        str("%+.1f%%", (100*max()/CurveSequence::Max::Max));
+    }
+
     // sequences
 
     const CurveSequenceArray &sequences() const { return _sequences; }
@@ -201,6 +259,10 @@ public:
 
     const CurveSequence &sequence(int index) const { return _sequences[index]; }
           CurveSequence &sequence(int index)       { return _sequences[index]; }
+
+    void setSequence(int index, CurveSequence seq) {
+        _sequences[index] = seq;
+    }
 
     //----------------------------------------
     // Routing
@@ -238,6 +300,11 @@ private:
     Routable<int8_t> _rotate;
     Routable<int8_t> _shapeProbabilityBias;
     Routable<int8_t> _gateProbabilityBias;
+
+    Routable<float> _min;
+    Routable<float> _max;
+
+    Types::CurveCvInput _curveCvInput;
 
     CurveSequenceArray _sequences;
 

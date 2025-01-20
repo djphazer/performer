@@ -91,7 +91,32 @@ enum ProjectVersion {
     Version31 = 31,
 
     // added Project::midiIntegrationMode, Project::midiProgramOffset, Project::alwaysSync
-    Version32 = 32,
+    Version32 = 32, // jackpf
+
+    // added Project::midiPgmChange
+    Version32andahalf = 32, // mebitek
+
+    // added Track::name and expand noteRetrigger to 3 bits and nprobability to 6bits
+    Version33 = 33,
+
+    // add bypass scale
+    Version34 = 34,
+
+    // add sequence name
+    Version35 = 35,
+
+    // change note length form 3 to 4 bits
+    Version36 = 36,
+
+    // add logic track
+    Version37 = 37,
+
+    // add arp track and malekko integration
+    Version38 = 38,
+
+    // add pattern follow
+    Version39 = 39,
+
 
     // automatically derive latest version
     Last,

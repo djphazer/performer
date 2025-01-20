@@ -1,10 +1,13 @@
 #include "RandomGenerator.h"
 
 #include "core/utils/Random.h"
+#include <cstddef>
+#include <ctime>
 
-RandomGenerator::RandomGenerator(SequenceBuilder &builder, Params &params) :
+RandomGenerator::RandomGenerator(SequenceBuilder &builder, Params &params, SelectedSteps &selected) :
     Generator(builder),
-    _params(params)
+    _params(params),
+    _selected(selected)
 {
     update();
 }
@@ -42,7 +45,13 @@ void RandomGenerator::printParam(int index, StringBuilder &str) const {
 
 void RandomGenerator::init() {
     _params = Params();
+    randomizeSeed();
     update();
+}
+
+void RandomGenerator::randomizeSeed() {
+    srand((unsigned int)time(NULL));
+    _params.seed = 0 + ( std::rand() % ( 999 - 0 + 1 ) );
 }
 
 void RandomGenerator::update() {
@@ -51,12 +60,18 @@ void RandomGenerator::update() {
     int size = _pattern.size();
 
     for (int i = 0; i < size; ++i) {
-        _pattern[i] = rng.nextRange(255);
+        if (_selected[i]) {
+            _pattern[i] = rng.nextRange(255);
+        } else {
+            _pattern[i] = 0;
+        }
     }
 
     for (int iteration = 0; iteration < _params.smooth; ++iteration) {
         for (int i = 0; i < size; ++i) {
-            _pattern[i] = (4 * _pattern[i] + _pattern[(i - 1 + size) % size] + _pattern[(i + 1) % size] + 3) / 6;
+            if (_selected[i]) {
+                _pattern[i] = (4 * _pattern[i] + _pattern[(i - 1 + size) % size] + _pattern[(i + 1) % size] + 3) / 6;
+            }
         }
     }
 
@@ -64,13 +79,17 @@ void RandomGenerator::update() {
     int scale = _params.scale;
 
     for (int i = 0; i < size; ++i) {
-        int value = _pattern[i];
-        // value = ((value - 127) * scale) / 10 + 127 + bias;
-        value = ((value + bias - 127) * scale) / 10 + 127;
-        _pattern[i] = clamp(value, 0, 255);
+        if (_selected[i]) {
+            int value = _pattern[i];
+            // value = ((value - 127) * scale) / 10 + 127 + bias;
+            value = ((value + bias - 127) * scale) / 10 + 127;
+            _pattern[i] = clamp(value, 0, 255);
+        }
     }
 
     for (size_t i = 0; i < _pattern.size(); ++i) {
-        _builder.setValue(i, _pattern[i] * (1.f / 255.f));
+        if (_selected[i]) {
+            _builder.setValue(i, _pattern[i] * (1.f / 255.f));
+        }
     }
 }

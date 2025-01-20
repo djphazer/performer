@@ -151,6 +151,42 @@ public:
         return mode() == Mode::Chromatic;
     }
 
+    bool isNotePresent(int note) const override {
+        if (note >= 12) {
+            note = note -12;
+        }
+        for (int i = 0; i < _size; i++) {
+            if (_items[i] == note) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    int getNoteIndex(int note) const override {
+        if (note >= 12) {
+            note = note - 12;
+        }
+         for (int i = 0; i < _size; i++) {
+            if (_items[i] == note) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    int noteIndex(int note, int rootNote) const override {
+        int octave = roundDownDivide(note, _size);
+
+        int noteIndex = _items[note - octave * _size] + rootNote;
+        while (noteIndex >= 12) {
+            noteIndex -= 12;
+            octave += 1;
+        }
+
+       return noteIndex;
+    }
+
     void noteName(StringBuilder &str, int note, int rootNote, Format format) const override {
         switch (_mode) {
         case Mode::Chromatic:

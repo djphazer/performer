@@ -1,5 +1,8 @@
 #include "NoteTrack.h"
 #include "ProjectVersion.h"
+#include <string>
+#include "core/utils/StringBuilder.h"
+
 
 void NoteTrack::writeRouted(Routing::Target target, int intValue, float floatValue) {
     switch (target) {
@@ -51,7 +54,9 @@ void NoteTrack::clear() {
     }
 }
 
+
 void NoteTrack::write(VersionedSerializedWriter &writer) const {
+    writer.write(_name, NameLength + 1);
     writer.write(_playMode);
     writer.write(_fillMode);
     writer.write(_fillMuted);
@@ -64,11 +69,16 @@ void NoteTrack::write(VersionedSerializedWriter &writer) const {
     writer.write(_retriggerProbabilityBias.base);
     writer.write(_lengthBias.base);
     writer.write(_noteProbabilityBias.base);
+    writer.write(_logicTrack);
+    writer.write(_logicTrackInput);
     writeArray(writer, _sequences);
+    writer.write(_patternFollow);
 }
 
 void NoteTrack::read(VersionedSerializedReader &reader) {
     reader.backupHash();
+
+    reader.read(_name, NameLength + 1, ProjectVersion::Version33);
 
     reader.read(_playMode);
     reader.read(_fillMode);
@@ -82,6 +92,8 @@ void NoteTrack::read(VersionedSerializedReader &reader) {
     reader.read(_retriggerProbabilityBias.base);
     reader.read(_lengthBias.base);
     reader.read(_noteProbabilityBias.base);
+    reader.read(_logicTrack, ProjectVersion::Version37);
+    reader.read(_logicTrackInput, ProjectVersion::Version37);
 
     // There is a bug in previous firmware versions where writing the properties
     // of a note track did not update the hash value.
@@ -90,4 +102,5 @@ void NoteTrack::read(VersionedSerializedReader &reader) {
     }
 
     readArray(reader, _sequences);
+    reader.read(_patternFollow, ProjectVersion::Version39);
 }
