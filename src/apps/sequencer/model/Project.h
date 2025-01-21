@@ -163,37 +163,32 @@ public:
         if (s != -1 && aScale.isChromatic() && pScale.isChromatic()) {
 
             for (int trackIndex = 0; trackIndex < 8; ++trackIndex) {
-                    auto &t = track(trackIndex);
-                    switch (t.trackMode()) {
-                        case Track::TrackMode::Note: {
-                            for (auto &seq : t.noteTrack().sequences()) {
-                                if (seq.scale()==-1) {
-                                    for (int i = 0; i < 64; ++i) {
-                                        auto pStep = seq.step(i);
+                auto &t = track(trackIndex);
+                if (t.trackMode() != Track::TrackMode::Note) continue;
 
-                                        int rN = pScale.noteIndex(pStep.note(), rootNote());
-                                        if (rN > 0) {
-                                            if (aScale.isNotePresent(rN)) {
-                                                int pNoteIndex = aScale.getNoteIndex(rN);
-                                                seq.step(i).setNote(pNoteIndex);
-                                            } else {
-                                                // search nearest note
-                                                while (!aScale.isNotePresent(rN)) {
-                                                    rN--;
-                                                }
-                                                int pNoteIndex = aScale.getNoteIndex(rN);
-                                                seq.step(i).setNote(pNoteIndex);
-                                            }
-                                        }
-                                    }
-                                }
+                for (auto &seq : t.noteTrack().sequences()) {
+                    if (seq.scale()!=-1) continue;
+
+                    for (int i = 0; i < 64; ++i) {
+                        auto pStep = seq.step(i);
+
+                        int rN = pScale.noteIndex(pStep.note(), rootNote());
+                        if (rN <= 0) continue;
+
+                        if (aScale.isNotePresent(rN)) {
+                            int pNoteIndex = aScale.getNoteIndex(rN);
+                            seq.step(i).setNote(pNoteIndex);
+                        } else {
+                            // search nearest note
+                            while (!aScale.isNotePresent(rN)) {
+                                rN--;
                             }
-                            break;
+                            int pNoteIndex = aScale.getNoteIndex(rN);
+                            seq.step(i).setNote(pNoteIndex);
                         }
-                        default:
-                            break;
                     }
                 }
+            }
         }
 
     }
