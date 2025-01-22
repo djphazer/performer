@@ -62,7 +62,7 @@ void ProjectPage::keyPress(KeyPressEvent &event) {
         _manager.pages().asteroids.show();
     }
 
-    if (key.is(Key::Encoder) && selectedRow() == 0) {
+    if (key.isEncoder() && selectedRow() == 0) {
         _manager.pages().textInput.show("NAME:", _project.name(), Project::NameLength, [this] (bool result, const char *text) {
             if (result) {
                 _project.setName(text);

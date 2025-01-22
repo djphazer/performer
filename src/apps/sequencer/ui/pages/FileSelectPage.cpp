@@ -55,7 +55,7 @@ void FileSelectPage::keyPress(KeyPressEvent &event) {
         }
     }
 
-    if (key.is(Key::Encoder)) {
+    if (key.isEncoder()) {
         closeWithResult(true);
         return;
     }

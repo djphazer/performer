@@ -140,7 +140,7 @@ void TextInputPage::keyPress(KeyPressEvent &event) {
         moveRight();
     }
 
-    if (key.is(Key::Encoder)) {
+    if (key.isEncoder()) {
         insert(characterSet[_selectedIndex]);
     }
 
