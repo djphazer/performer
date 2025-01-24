@@ -22,6 +22,9 @@ static const ContextMenuModel::Item contextMenuItems[] = {
     { "ROUTE" },
 };
 
+static const char *functionNames[] = { "Edit", "Sequence", "", "", "Song" };
+static const Key::Code FunctionModeMap[] = { Key::SequenceEdit, Key::Sequence, Key::None, Key::None, Key::Song };
+
 TrackPage::TrackPage(PageManager &manager, PageContext &context) :
     ListPage(manager, context, _noteTrackListModel)
 {}
@@ -37,7 +40,7 @@ void TrackPage::draw(Canvas &canvas) {
     WindowPainter::clear(canvas);
     WindowPainter::drawHeader(canvas, _model, _engine, "TRACK");
     WindowPainter::drawActiveFunction(canvas, Track::trackModeName(_project.selectedTrack().trackMode()));
-    WindowPainter::drawFooter(canvas);
+    WindowPainter::drawFooter(canvas, functionNames, globalKeyState(), -1);
 
     ListPage::draw(canvas);
 }
@@ -53,6 +56,11 @@ void TrackPage::keyPress(KeyPressEvent &event) {
         contextShow();
         event.consume();
         return;
+    }
+
+    if (key.isFunction()) {
+        _manager.setView(FunctionModeMap[key.function()]);
+        event.consume();
     }
 
     if (key.isTrackSelect()) {

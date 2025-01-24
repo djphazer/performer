@@ -65,7 +65,6 @@ void HomePage::editRoute(Routing::Target target, int trackIndex) {
 }
 
 void HomePage::draw(Canvas &canvas) {
-    // TODO: Home page jump options
     //_manager.pages().overview.draw(canvas);
 
     //Overview, Project, Track, UserScale, Monitor

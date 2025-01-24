@@ -24,6 +24,9 @@ static const ContextMenuModel::Item contextMenuItems[] = {
     { "ROUTE" },
 };
 
+static const char *functionNames[] = { "Edit", "Sequence", "Track", "", "Song" };
+static const Key::Code FunctionModeMap[] = { Key::SequenceEdit, Key::Sequence, Key::Track, Key::None, Key::Song };
+
 CurveSequencePage::CurveSequencePage(PageManager &manager, PageContext &context) :
     ListPage(manager, context, _listModel)
 {}
@@ -40,7 +43,7 @@ void CurveSequencePage::draw(Canvas &canvas) {
     WindowPainter::clear(canvas);
     WindowPainter::drawHeader(canvas, _model, _engine, "SEQUENCE");
     WindowPainter::drawActiveFunction(canvas, Track::trackModeName(_project.selectedTrack().trackMode()));
-    WindowPainter::drawFooter(canvas);
+    WindowPainter::drawFooter(canvas, functionNames, globalKeyState(), -1);
 
     ListPage::draw(canvas);
 }
@@ -56,6 +59,11 @@ void CurveSequencePage::keyPress(KeyPressEvent &event) {
         contextShow();
         event.consume();
         return;
+    }
+
+    if (key.isFunction()) {
+        _manager.setView(FunctionModeMap[key.function()]);
+        event.consume();
     }
 
     if (!event.consumed()) {

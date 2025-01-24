@@ -25,6 +25,9 @@ static const ContextMenuModel::Item contextMenuItems[] = {
     { "ROUTE" }
 };
 
+static const char *functionNames[] = { "Clock", "Layout", "Routing", "MIDI Out", "Song" };
+static const Key::Code FunctionModeMap[] = { Key::Clock, Key::Layout, Key::Routing, Key::MidiOutput, Key::Song };
+
 ProjectPage::ProjectPage(PageManager &manager, PageContext &context) :
     ListPage(manager, context, _listModel),
     _listModel(context.model.project())
@@ -37,9 +40,10 @@ void ProjectPage::exit() {
 }
 
 void ProjectPage::draw(Canvas &canvas) {
+
     WindowPainter::clear(canvas);
     WindowPainter::drawHeader(canvas, _model, _engine, "PROJECT");
-    WindowPainter::drawFooter(canvas);
+    WindowPainter::drawFooter(canvas, functionNames, globalKeyState(), -1);
 
     ListPage::draw(canvas);
 }
@@ -57,9 +61,14 @@ void ProjectPage::keyPress(KeyPressEvent &event) {
         return;
     }
 
-    if (key.pageModifier() && key.is(Key::Step15)) {
+    if (key.shiftModifier() && key.is(Key::Step15)) {
         // easter egg
         _manager.pages().asteroids.show();
+    }
+
+    if (key.isFunction()) {
+        _manager.setView(FunctionModeMap[key.function()]);
+        event.consume();
     }
 
     if (key.isEncoder() && selectedRow() == 0) {

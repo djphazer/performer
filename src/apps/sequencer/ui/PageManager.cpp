@@ -86,3 +86,8 @@ void PageManager::dispatchEvent(Event &event) {
         _pageStack[i]->dispatchEvent(event);
     }
 }
+
+void PageManager::setView(Key::Code code) {
+    // TODO: move logic from HomePage to here
+    _pages.home.setView(code);
+}

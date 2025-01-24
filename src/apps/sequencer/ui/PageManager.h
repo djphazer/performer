@@ -36,6 +36,7 @@ public:
     int fps() const;
 
     void dispatchEvent(Event &event);
+    void setView(Key::Code code);
 
     void setPageSwitchHandler(PageSwitchHandler pageSwitchHandler) {
         _pageSwitchHandler = pageSwitchHandler;

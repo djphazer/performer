@@ -20,6 +20,11 @@ public:
     virtual void keyPress(KeyPressEvent &event) override;
     virtual void encoder(EncoderEvent &event) override;
 
+    void setView(Key::Code code) {
+        //_manager.setView(mode);
+        setMode(Mode(code));
+    }
+
 private:
     enum Mode : uint8_t {
         // main modes

@@ -109,10 +109,8 @@ public:
         F3 = MatrixMap::fromFunction(3),
         F4 = MatrixMap::fromFunction(4),
         Encoder = 40,
-    };
 
-    // page select key aliases
-    enum PageKey {
+        // page select key aliases
         Clock           = Tempo,
         //Pattern         = Key::Pattern,
         //Performer       = Key::Performer,
