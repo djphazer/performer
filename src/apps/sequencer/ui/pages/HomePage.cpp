@@ -14,8 +14,8 @@ HomePage::HomePage(PageManager &manager, PageContext &context) :
 }
 
 void HomePage::init() {
-    setMode(Mode::Project);
-    //setMode(Mode::Overview);
+    setMode(PageView::Project);
+    //setMode(PageView::Overview);
 
     _context.model.project().watch([this] (Project::Event event) {
         auto &pages = _manager.pages();
@@ -46,7 +46,7 @@ void HomePage::editRoute(Routing::Target target, int trackIndex) {
 
     int routeIndex = routing.findRoute(target, trackIndex);
     if (routeIndex >= 0) {
-        setMode(Mode::Routing);
+        setMode(PageView::Routing);
         _manager.pages().routing.showRoute(routeIndex);
         return;
     }
@@ -57,7 +57,7 @@ void HomePage::editRoute(Routing::Target target, int trackIndex) {
         Routing::Route initRoute;
         initRoute.setTarget(target);
         initRoute.setTracks(1<<trackIndex);
-        setMode(Mode::Routing);
+        setMode(PageView::Routing);
         _manager.pages().routing.showRoute(routeIndex, &initRoute);
     } else {
         showMessage("All routes are used!");
@@ -67,14 +67,12 @@ void HomePage::editRoute(Routing::Target target, int trackIndex) {
 void HomePage::draw(Canvas &canvas) {
     //_manager.pages().overview.draw(canvas);
 
-    //Overview, Project, Track, UserScale, Monitor
-    const char *functionNames[] = { "Overview", "Project", "Track", "Scales", "System" };
-
     WindowPainter::clear(canvas);
     WindowPainter::drawHeader(canvas, _model, _engine, "HOME");
     //WindowPainter::drawActiveFunction(canvas, "whateven");
     WindowPainter::drawFooter(canvas, functionNames, globalKeyState(), -1);
 
+    // TODO: put something more useful here...
     canvas.setFont(Font::Small);
     canvas.drawTextCentered(0, 20, Width, 16, "Home Page :)");
 }
@@ -88,11 +86,7 @@ void HomePage::updateLeds(Leds &leds) {
         clockTick
     );
 
-    if (isTop() && !globalKeyState()[Key::Shift]) {
-        LedPainter::drawSelectedPage(leds, _mode);
-    } else {
-        LedPainter::drawTrackGatesAndSelectedTrack(leds, _engine, _project.playState(), _project.selectedTrackIndex());
-    }
+    LedPainter::drawTrackGatesAndSelectedTrack(leds, _engine, _project.playState(), _project.selectedTrackIndex());
 }
 
 void HomePage::keyDown(KeyEvent &event) {
@@ -108,7 +102,7 @@ void HomePage::keyPress(KeyPressEvent &event) {
     const auto &key = event.key();
 
     if (key.isTrack() && event.count() == 2) {
-        setMode(Mode::SequenceEdit);
+        setMode(PageView::SequenceEdit);
         event.consume();
         return;
     }
@@ -119,23 +113,26 @@ void HomePage::keyPress(KeyPressEvent &event) {
     }
 
     if (isTop()) {
-        if (key.pageSelect() > -1) {
-            setMode(Mode(key.code()));
-            _context.globalKeyState[ Key::Shift ] = false;
-            event.consume();
+        if (key.isHome()) {
+            setMode(_mode); // go back where we came from
         }
+        // if we're on top, every key navigates to somewhere...
         if (key.isFunction()) {
             // Nav shortcuts on F-keys
             setMode( FunctionModeMap[key.function()] );
-            event.consume();
+        } else {
+            setMode(PageView(key.code()));
         }
+
+        _context.globalKeyState[ Key::Shift ] = false;
+        event.consume();
     } else {
-        if (key.isPattern() && _mode != Mode::Pattern) {
+        if (key.isPattern() && _mode != PageView::Pattern) {
             pages.pattern.setModal(true);
             pages.pattern.show();
             event.consume();
         }
-        if (key.isPerformer() && _mode != Mode::Performer) {
+        if (key.isPerformer() && _mode != PageView::Performer) {
             pages.performer.setModal(true);
             pages.performer.show();
             event.consume();
@@ -165,28 +162,28 @@ void HomePage::encoder(EncoderEvent &event) {
     event.consume();
 }
 
-void HomePage::setMode(Mode mode) {
+void HomePage::setMode(PageView mode) {
     auto &pages = _manager.pages();
 
     _lastMode = _mode;
 
     switch (mode) {
-    case Mode::Project:
+    case PageView::Project:
         setMainPage(pages.project);
         break;
-    case Mode::Layout:
+    case PageView::Layout:
         setMainPage(pages.layout);
         break;
-    case Mode::Track:
+    case PageView::Track:
         setMainPage(pages.track);
         break;
-    case Mode::Sequence:
+    case PageView::Sequence:
         setSequencePage();
         break;
-    case Mode::SequenceEdit:
+    case PageView::SequenceEdit:
         setSequenceEditPage();
         break;
-    case Mode::Pattern:
+    case PageView::Pattern:
         pages.pattern.setModal(false);
         // do not re-enter pattern page when its already the selected page
         // the reason for this is that when changing a pattern in latched mode, we don't want to loose the latch
@@ -195,32 +192,32 @@ void HomePage::setMode(Mode mode) {
             setMainPage(pages.pattern);
         }
         break;
-    case Mode::Performer:
+    case PageView::Performer:
         pages.performer.setModal(false);
         setMainPage(pages.performer);
         break;
-    case Mode::Overview:
+    case PageView::Overview:
         setMainPage(pages.overview);
         break;
-    case Mode::Clock:
+    case PageView::Clock:
         setMainPage(pages.clockSetup);
         break;
-    case Mode::Song:
+    case PageView::Song:
         setMainPage(pages.song);
         break;
-    case Mode::Routing:
+    case PageView::Routing:
         setMainPage(pages.routing);
         break;
-    case Mode::MidiOutput:
+    case PageView::MidiOutput:
         setMainPage(pages.midiOutput);
         break;
-    case Mode::UserScale:
+    case PageView::UserScale:
         setMainPage(pages.userScale);
         break;
-    case Mode::Monitor:
+    case PageView::Monitor:
         setMainPage(pages.monitor);
         break;
-    case Mode::System:
+    case PageView::System:
         if (mode != _lastMode) {
             _manager.pages().confirmation.show("DO YOU REALLY WANT TO ENTER SYSTEM PAGE?", [this] (bool result) {
                 if (result) {

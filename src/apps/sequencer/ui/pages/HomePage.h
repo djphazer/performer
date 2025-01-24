@@ -21,12 +21,13 @@ public:
     virtual void encoder(EncoderEvent &event) override;
 
     void setView(Key::Code code) {
+        // TODO: move logic to PageManager
         //_manager.setView(mode);
-        setMode(Mode(code));
+        setMode(PageView(code));
     }
 
 private:
-    enum Mode : uint8_t {
+    enum PageView : uint8_t {
         // main modes
         Project         = Key::Project,
         Layout          = Key::Layout,
@@ -48,25 +49,18 @@ private:
 
         Last,
     };
-    enum Function : uint8_t {
-        F1_Overview,
-        F2_Project,
-        F3_Track,
-        F4_UserScales,
-        F5_SystemMonitor,
 
-        FUNCTION_COUNT
-    };
-    const Mode FunctionModeMap[FUNCTION_COUNT] = {
+    const char *functionNames[5] = { "Overview", "Project", "Track", "Scales", "System" };
+    const PageView FunctionModeMap[5] = {
         Overview, Project, Track, UserScale, Monitor
     };
 
-    void setMode(Mode mode);
+    void setMode(PageView mode);
     void setMainPage(Page &page);
 
     void setSequencePage();
     void setSequenceEditPage();
 
-    Mode _mode;
-    Mode _lastMode;
+    PageView _mode;
+    PageView _lastMode;
 };

@@ -75,7 +75,10 @@ int PageManager::fps() const {
 
 void PageManager::dispatchEvent(Event &event) {
     if (event.type() == Event::KeyPress && event.as<KeyPressEvent>().key().isHome()) {
-        reset(&_pages.home);
+        if (top() != &_pages.home) {
+            reset(&_pages.home);
+            event.consume();
+        }
     }
 
     // handle top to bottom
