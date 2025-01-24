@@ -7,7 +7,6 @@
 #include "ConfirmationPage.h"
 #include "ContextMenuPage.h"
 #include "CurveSequenceEditPage.h"
-#include "CurveSequencePage.h"
 #include "FileSelectPage.h"
 #include "GeneratorPage.h"
 #include "GeneratorSelectPage.h"
@@ -15,7 +14,7 @@
 #include "MidiOutputPage.h"
 #include "MonitorPage.h"
 #include "NoteSequenceEditPage.h"
-#include "NoteSequencePage.h"
+#include "SequencePage.h"
 #include "OverviewPage.h"
 #include "PatternPage.h"
 #include "PerformerPage.h"
@@ -44,8 +43,8 @@ struct Pages {
     ProjectPage project;
     LayoutPage layout;
     TrackPage track;
-    NoteSequencePage noteSequence;
-    CurveSequencePage curveSequence;
+    SequencePage sequence;
+        //noteSequence;
     NoteSequenceEditPage noteSequenceEdit;
     CurveSequenceEditPage curveSequenceEdit;
     PatternPage pattern;
@@ -85,8 +84,7 @@ struct Pages {
         project(manager, context),
         layout(manager, context),
         track(manager, context),
-        noteSequence(manager, context),
-        curveSequence(manager, context),
+        sequence(manager, context),
         noteSequenceEdit(manager, context),
         curveSequenceEdit(manager, context),
         pattern(manager, context),

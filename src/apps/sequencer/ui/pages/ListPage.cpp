@@ -12,6 +12,7 @@ ListPage::ListPage(PageManager &manager, PageContext &context, ListModel &listMo
 }
 
 void ListPage::setListModel(ListModel &listModel) {
+    if (_listModel == &listModel) return;
     _listModel = &listModel;
     setSelectedRow(0);
     _edit = false;

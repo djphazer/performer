@@ -2,11 +2,9 @@
 
 #include "Config.h"
 
-#include "RoutableListModel.h"
-
 #include "model/MidiCvTrack.h"
 
-class MidiCvTrackListModel : public RoutableListModel {
+class MidiCvTrackListModel : public ListModel {
 public:
     void setTrack(MidiCvTrack &track) {
         _track = &track;

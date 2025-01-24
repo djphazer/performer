@@ -248,10 +248,8 @@ void HomePage::setSequencePage() {
 
     switch (_project.selectedTrack().trackMode()) {
     case Track::TrackMode::Note:
-        setMainPage(pages.noteSequence);
-        break;
     case Track::TrackMode::Curve:
-        setMainPage(pages.curveSequence);
+        setMainPage(pages.sequence);
         break;
     case Track::TrackMode::MidiCv:
         setMainPage(pages.track);

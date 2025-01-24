@@ -2,11 +2,9 @@
 
 #include "Config.h"
 
-#include "RoutableListModel.h"
-
 #include "model/Project.h"
 
-class ProjectListModel : public RoutableListModel {
+class ProjectListModel : public ListModel {
 public:
     ProjectListModel(Project &project) :
         _project(project)

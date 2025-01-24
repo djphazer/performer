@@ -2,12 +2,11 @@
 
 #include "Config.h"
 
-#include "RoutableListModel.h"
-
+#include "ListModel.h"
 #include "model/NoteSequence.h"
 #include "model/Scale.h"
 
-class NoteSequenceListModel : public RoutableListModel {
+class NoteSequenceListModel : public ListModel {
 public:
     enum Item {
         FirstStep,

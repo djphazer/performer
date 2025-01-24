@@ -73,7 +73,6 @@ set(sources
     ui/pages/ConfirmationPage.cpp
     ui/pages/ContextMenuPage.cpp
     ui/pages/CurveSequenceEditPage.cpp
-    ui/pages/CurveSequencePage.cpp
     ui/pages/FileSelectPage.cpp
     ui/pages/GeneratorPage.cpp
     ui/pages/GeneratorSelectPage.cpp
@@ -83,7 +82,7 @@ set(sources
     ui/pages/MidiOutputPage.cpp
     ui/pages/MonitorPage.cpp
     ui/pages/NoteSequenceEditPage.cpp
-    ui/pages/NoteSequencePage.cpp
+    ui/pages/SequencePage.cpp
     ui/pages/OverviewPage.cpp
     ui/pages/PatternPage.cpp
     ui/pages/PerformerPage.cpp

@@ -22,7 +22,7 @@ static const ContextMenuModel::Item contextMenuItems[] = {
     { "ROUTE" },
 };
 
-static const char *functionNames[] = { "Edit", "Sequence", "", "", "Song" };
+static const char *functionNames[] = { "Edit", "Sequence", nullptr, nullptr, "Song" };
 static const Key::Code FunctionModeMap[] = { Key::SequenceEdit, Key::Sequence, Key::None, Key::None, Key::Song };
 
 TrackPage::TrackPage(PageManager &manager, PageContext &context) :
@@ -72,7 +72,7 @@ void TrackPage::keyPress(KeyPressEvent &event) {
 }
 
 void TrackPage::setTrack(Track &track) {
-    RoutableListModel *newListModel = _listModel;
+    ListModel *newListModel = nullptr;
 
     switch (track.trackMode()) {
     case Track::TrackMode::Note:
@@ -88,14 +88,13 @@ void TrackPage::setTrack(Track &track) {
         newListModel = &_midiCvTrackListModel;
         break;
     case Track::TrackMode::Last:
+    default:
         ASSERT(false, "invalid track mode");
         break;
     }
 
-    if (newListModel != _listModel) {
-        _listModel = newListModel;
-        setListModel(*_listModel);
-    }
+    if (newListModel)
+        setListModel(*newListModel);
 }
 
 void TrackPage::contextShow() {
@@ -131,7 +130,7 @@ bool TrackPage::contextActionEnabled(int index) const {
     case ContextAction::Paste:
         return _model.clipBoard().canPasteTrack();
     case ContextAction::Route:
-        return _listModel->routingTarget(selectedRow()) != Routing::Target::None;
+        return getListModel().routingTarget(selectedRow()) != Routing::Target::None;
     default:
         return true;
     }
@@ -158,5 +157,5 @@ void TrackPage::pasteTrackSetup() {
 }
 
 void TrackPage::initRoute() {
-    _manager.pages().home.editRoute(_listModel->routingTarget(selectedRow()), _project.selectedTrackIndex());
+    _manager.pages().home.editRoute(getListModel().routingTarget(selectedRow()), _project.selectedTrackIndex());
 }

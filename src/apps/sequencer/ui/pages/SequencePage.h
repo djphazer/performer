@@ -2,11 +2,12 @@
 
 #include "ListPage.h"
 
+#include "ui/model/NoteSequenceListModel.h"
 #include "ui/model/CurveSequenceListModel.h"
 
-class CurveSequencePage : public ListPage {
+class SequencePage : public ListPage {
 public:
-    CurveSequencePage(PageManager &manager, PageContext &context);
+    SequencePage(PageManager &manager, PageContext &context);
 
     virtual void enter() override;
     virtual void exit() override;
@@ -27,5 +28,6 @@ private:
     void duplicateSequence();
     void initRoute();
 
-    CurveSequenceListModel _listModel;
+    NoteSequenceListModel _noteList;
+    CurveSequenceListModel _curveList;
 };

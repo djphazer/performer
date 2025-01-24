@@ -9,6 +9,7 @@ public:
     ListPage(PageManager &manager, PageContext &context, ListModel &listModel);
 
     void setListModel(ListModel &listModel);
+    const ListModel &getListModel() const { return *_listModel; }
 
     virtual void show() override;
 

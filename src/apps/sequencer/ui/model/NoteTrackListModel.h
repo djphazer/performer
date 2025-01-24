@@ -2,11 +2,9 @@
 
 #include "Config.h"
 
-#include "RoutableListModel.h"
-
 #include "model/NoteTrack.h"
 
-class NoteTrackListModel : public RoutableListModel {
+class NoteTrackListModel : public ListModel {
 public:
     void setTrack(NoteTrack &track) {
         _track = &track;
