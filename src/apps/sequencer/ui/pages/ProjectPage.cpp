@@ -63,7 +63,7 @@ void ProjectPage::keyPress(KeyPressEvent &event) {
 
     if (key.shiftModifier() && key.is(Key::Step15)) {
         // easter egg
-        _manager.pages().asteroids.show();
+        _manager.reset(&_manager.pages().asteroids);
     }
 
     if (key.isFunction()) {
