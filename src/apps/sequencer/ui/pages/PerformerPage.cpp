@@ -36,7 +36,7 @@ void PerformerPage::draw(Canvas &canvas) {
 
     WindowPainter::clear(canvas);
     WindowPainter::drawHeader(canvas, _model, _engine, "PERFORM");
-    WindowPainter::drawFooter(canvas, functionNames, pageKeyState());
+    WindowPainter::drawFooter(canvas, functionNames, globalKeyState());
 
     constexpr int Border = 4;
     constexpr int BorderRequested = 6;
@@ -81,7 +81,7 @@ void PerformerPage::draw(Canvas &canvas) {
         SequencePainter::drawSequenceProgress(canvas, x, y + h + 2, w, 2, trackEngine.sequenceProgress());
 
         // draw fill & fill amount amount
-        bool pressed = pageKeyState()[MatrixMap::fromStep(trackIndex)];
+        bool pressed = globalKeyState()[MatrixMap::fromStep(trackIndex)];
         canvas.setColor(pressed ? Color::Medium : Color::Low);
         canvas.fillRect(x, y + h + 6, w, 4);
         canvas.setColor(pressed ? Color::Bright : Color::Medium);
@@ -173,7 +173,7 @@ void PerformerPage::keyUp(KeyEvent &event) {
 
     bool stepKeyPressed = false;
     for (int step = 0; step < 16; ++step) {
-        stepKeyPressed |= pageKeyState()[MatrixMap::fromStep(step)];
+        stepKeyPressed |= globalKeyState()[MatrixMap::fromStep(step)];
     }
 
     bool canClose = _modal && !_latching && !_syncing && !globalKeyState()[Key::Performer] && !stepKeyPressed;
@@ -222,7 +222,7 @@ void PerformerPage::keyPress(KeyPressEvent &event) {
 
 void PerformerPage::encoder(EncoderEvent &event) {
     for (int trackIndex = 0; trackIndex < 8; ++trackIndex) {
-        if (pageKeyState()[MatrixMap::fromStep(trackIndex)]) {
+        if (globalKeyState()[MatrixMap::fromStep(trackIndex)]) {
             _project.playState().trackState(trackIndex).editFillAmount(event.value(), false);
         }
     }
@@ -230,11 +230,11 @@ void PerformerPage::encoder(EncoderEvent &event) {
 
 void PerformerPage::updateFills() {
     auto &playState = _project.playState();
-    bool fillPressed = pageKeyState()[MatrixMap::fromFunction(int(Function::Fill))];
+    bool fillPressed = globalKeyState()[MatrixMap::fromFunction(int(Function::Fill))];
     bool holdPressed = globalKeyState()[Key::Shift];
 
     for (int trackIndex = 0; trackIndex < CONFIG_TRACK_COUNT; ++trackIndex) {
-        bool trackFill = pageKeyState()[MatrixMap::fromStep(8 + trackIndex)];
+        bool trackFill = globalKeyState()[MatrixMap::fromStep(8 + trackIndex)];
         playState.fillTrack(trackIndex, trackFill || fillPressed, holdPressed);
     }
 }

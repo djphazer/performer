@@ -60,7 +60,6 @@ private:
     Canvas _canvas;
     uint32_t _lastFrameBufferUpdateTicks;
 
-    KeyState _pageKeyState;
     KeyState _globalKeyState;
     KeyPressEventTracker _keyPressEventTracker;
     Leds _leds;

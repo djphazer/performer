@@ -28,7 +28,7 @@ void GeneratorSelectPage::exit() {
 void GeneratorSelectPage::draw(Canvas &canvas) {
     WindowPainter::clear(canvas);
     WindowPainter::drawHeader(canvas, _model, _engine, "GENERATOR");
-    WindowPainter::drawFooter(canvas, functionNames, pageKeyState());
+    WindowPainter::drawFooter(canvas, functionNames, globalKeyState());
 
     ListPage::draw(canvas);
 }

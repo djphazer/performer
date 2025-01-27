@@ -74,7 +74,7 @@ void NoteSequenceEditPage::draw(Canvas &canvas) {
     WindowPainter::clear(canvas);
     WindowPainter::drawHeader(canvas, _model, _engine, "STEPS");
     WindowPainter::drawActiveFunction(canvas, NoteSequence::layerName(layer()));
-    WindowPainter::drawFooter(canvas, functionNames, pageKeyState(), activeFunctionKey());
+    WindowPainter::drawFooter(canvas, functionNames, globalKeyState(), activeFunctionKey());
 
     const auto &trackEngine = _engine.selectedTrackEngine().as<NoteTrackEngine>();
     const auto &sequence = _project.selectedNoteSequence();

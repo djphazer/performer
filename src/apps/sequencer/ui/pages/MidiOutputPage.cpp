@@ -37,7 +37,7 @@ void MidiOutputPage::draw(Canvas &canvas) {
     WindowPainter::clear(canvas);
     WindowPainter::drawHeader(canvas, _model, _engine, "MIDI OUTPUT");
     WindowPainter::drawActiveFunction(canvas, FixedStringBuilder<16>("OUTPUT %d", _outputIndex + 1));
-    WindowPainter::drawFooter(canvas, functionNames, pageKeyState());
+    WindowPainter::drawFooter(canvas, functionNames, globalKeyState());
 
     ListPage::draw(canvas);
 }

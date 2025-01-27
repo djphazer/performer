@@ -56,7 +56,7 @@ void SongPage::draw(Canvas &canvas) {
 
     WindowPainter::clear(canvas);
     WindowPainter::drawHeader(canvas, _model, _engine, "SONG");
-    WindowPainter::drawFooter(canvas, functionNames, pageKeyState());
+    WindowPainter::drawFooter(canvas, functionNames, globalKeyState());
 
     const int colWidth[] = { 16, 16, 20, 20, 20, 20, 20, 20, 20, 20 };
     const char *colHeader[] = { "#", "N", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8" };

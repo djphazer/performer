@@ -18,7 +18,7 @@ Ui::Ui(Model &model, Engine &engine, Lcd &lcd, ButtonLedMatrix &blm, Encoder &en
         _frameBuffer(CONFIG_LCD_WIDTH, CONFIG_LCD_HEIGHT, _frameBufferData),
         _canvas(_frameBuffer, settings.userSettings().get<BrightnessSetting>(SettingBrightness)->getValue()),
         _pageManager(_pages),
-        _pageContext({ _messageManager, _pageKeyState, _globalKeyState, _model, _engine }),
+        _pageContext({ _messageManager, _globalKeyState, _model, _engine }),
         _pages(_pageManager, _pageContext),
         _controllerManager(model, engine),
         // TODO pass as arg
@@ -31,11 +31,9 @@ Ui::Ui(Model &model, Engine &engine, Lcd &lcd, ButtonLedMatrix &blm, Encoder &en
 }
 
 void Ui::init() {
-    _pageKeyState.reset();
     _globalKeyState.reset();
 
     _pageManager.setPageSwitchHandler([this] (Page *page) {
-        //_pageKeyState.reset();
         //_globalKeyState.reset();
     });
 
@@ -141,29 +139,13 @@ void Ui::showAssert(const char *filename, int line, const char *msg) {
 }
 
 void Ui::handleKeys() {
-    static bool cancel_mods = false;
-
     ButtonLedMatrix::Event event;
     while (_blm.nextEvent(event)) {
         bool isDown = event.action() == ButtonLedMatrix::Event::KeyDown;
         const auto whichKey = event.value();
 
-        if (whichKey == Key::Shift) {
-            if (isDown) {
-                _globalKeyState.flip(whichKey);
-            } else if (cancel_mods) {
-                _globalKeyState[whichKey] = false;
-            }
-            cancel_mods = false;
-        } else {
-            _globalKeyState[whichKey] = isDown;
-            // Page or Shift keys turn off on keyUp if another key was pressed and released
-            cancel_mods = cancel_mods || !isDown;
-        }
-        // TODO: eliminate _pageKeyState; it's redundant
-        _pageKeyState[whichKey] = _globalKeyState[whichKey];
+        _globalKeyState[whichKey] = isDown;
         Key key(whichKey, _globalKeyState);
-
         KeyEvent keyEvent(isDown ? Event::KeyDown : Event::KeyUp, key);
         _screensaver.consumeKey(keyEvent);
         _pageManager.dispatchEvent(keyEvent);
@@ -181,7 +163,7 @@ void Ui::handleEncoder() {
         switch (event) {
             case Encoder::Left:
             case Encoder::Right: {
-                EncoderEvent encoderEvent(event == Encoder::Left ? -1 : 1, _pageKeyState[Key::Encoder]);
+                EncoderEvent encoderEvent(event == Encoder::Left ? -1 : 1, _globalKeyState[Key::Encoder]);
                 _screensaver.consumeEncoder(encoderEvent);
                 _pageManager.dispatchEvent(encoderEvent);
                 break;
@@ -189,7 +171,6 @@ void Ui::handleEncoder() {
             case Encoder::Down:
             case Encoder::Up: {
                 bool isDown = event == Encoder::Down;
-                _pageKeyState[Key::Encoder] = isDown ? 1 : 0;
                 _globalKeyState[Key::Encoder] = isDown ? 1 : 0;
                 Key key(Key::Encoder, _globalKeyState);
                 KeyEvent keyEvent(isDown ? Event::KeyDown : Event::KeyUp, key);

@@ -76,22 +76,22 @@ void SystemPage::draw(Canvas &canvas) {
         FixedStringBuilder<8> str("CAL CV%d", _outputIndex + 1);
         WindowPainter::drawActiveFunction(canvas, str);
         if (edit()) {
-            WindowPainter::drawFooter(canvas, calibrationEditFunctionNames, pageKeyState());
+            WindowPainter::drawFooter(canvas, calibrationEditFunctionNames, globalKeyState());
         } else {
-            WindowPainter::drawFooter(canvas, functionNames, pageKeyState(), int(_mode));
+            WindowPainter::drawFooter(canvas, functionNames, globalKeyState(), int(_mode));
         }
         ListPage::draw(canvas);
         break;
     }
     case Mode::Utilities: {
         WindowPainter::drawActiveFunction(canvas, "UTILITIES");
-        WindowPainter::drawFooter(canvas, functionNames, pageKeyState(), int(_mode));
+        WindowPainter::drawFooter(canvas, functionNames, globalKeyState(), int(_mode));
         ListPage::draw(canvas);
         break;
     }
     case Mode::Update: {
         WindowPainter::drawActiveFunction(canvas, "UPDATE");
-        WindowPainter::drawFooter(canvas, functionNames, pageKeyState(), int(_mode));
+        WindowPainter::drawFooter(canvas, functionNames, globalKeyState(), int(_mode));
         canvas.setBlendMode(BlendMode::Set);
         canvas.setColor(Color::Bright);
         canvas.drawText(4, 24, "CURRENT VERSION:");
@@ -108,7 +108,7 @@ void SystemPage::draw(Canvas &canvas) {
     }
     case Mode::Settings: {
         WindowPainter::drawActiveFunction(canvas, "SETTINGS");
-        WindowPainter::drawFooter(canvas, functionNames, pageKeyState(), int(_mode));
+        WindowPainter::drawFooter(canvas, functionNames, globalKeyState(), int(_mode));
         ListPage::draw(canvas);
         break;
     }
