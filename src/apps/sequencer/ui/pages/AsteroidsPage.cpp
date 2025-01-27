@@ -74,6 +74,9 @@ void AsteroidsPage::keyPress(KeyPressEvent &event) {
     if (key.pageModifier() && key.is(Key::Step15)) {
         close();
     }
+
+    if (key.isFunction())
+        event.consume();
 }
 
 void AsteroidsPage::encoder(EncoderEvent &event) {
