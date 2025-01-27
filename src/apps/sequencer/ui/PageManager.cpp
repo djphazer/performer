@@ -14,6 +14,10 @@ Page *PageManager::top() const {
 
 void PageManager::push(Page *page) {
     ASSERT(_pageStackPos < PageStackSize - 1, "page stack overflow");
+    for (int i = 0; i <= _pageStackPos; ++i) {
+        // to avoid duplicates...
+        if (_pageStack[i] == page) return;
+    }
     _pageStack[++_pageStackPos] = page;
     page->enter();
 
