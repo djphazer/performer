@@ -3,6 +3,7 @@
 #include "BasePage.h"
 
 #include "model/Routing.h"
+#include "intro/Intro.h"
 
 class HomePage : public BasePage {
 public:
@@ -63,4 +64,7 @@ private:
 
     PageView _mode;
     PageView _lastMode;
+
+    Intro _intro;
+    uint32_t _lastTicks;
 };

@@ -68,13 +68,20 @@ void HomePage::draw(Canvas &canvas) {
     //_manager.pages().overview.draw(canvas);
 
     WindowPainter::clear(canvas);
+
+    uint32_t currentTicks = os::ticks();
+    float dt = float(currentTicks - _lastTicks) / os::time::ms(1000);
+    _lastTicks = currentTicks;
+    _intro.update(dt, _engine.gateOutput());
+    _intro.draw(canvas);
+
     WindowPainter::drawHeader(canvas, _model, _engine, "HOME");
     //WindowPainter::drawActiveFunction(canvas, "whateven");
     WindowPainter::drawFooter(canvas, functionNames, globalKeyState(), -1);
 
     // TODO: put something more useful here...
-    canvas.setFont(Font::Small);
-    canvas.drawTextCentered(0, 20, Width, 16, "Home Page :)");
+    //canvas.setFont(Font::Small);
+    //canvas.drawTextCentered(0, 20, Width, 16, "Home Page :)");
 }
 
 void HomePage::updateLeds(Leds &leds) {
