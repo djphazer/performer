@@ -53,10 +53,12 @@ void FileSelectPage::keyPress(KeyPressEvent &event) {
             closeWithResult(true);
             break;
         }
+        event.consume();
     }
 
     if (key.isEncoder()) {
         closeWithResult(true);
+        event.consume();
         return;
     }
 

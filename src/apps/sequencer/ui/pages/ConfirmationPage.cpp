@@ -52,6 +52,7 @@ void ConfirmationPage::keyPress(KeyPressEvent &event) {
             closeWithResult(true);
             break;
         }
+        event.consume();
     }
 }
 
