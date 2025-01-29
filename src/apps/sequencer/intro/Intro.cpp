@@ -57,7 +57,7 @@ void Intro::draw(Canvas &canvas) {
     canvas.fill();
     canvas.setColor(Color::Bright);
 
-    Vec3 eye(0.f, 0.f, -15.f);
+    Vec3 eye(0.f, 0.f, -25.f);
     Vec3 target(0.f);
     Vec3 up(0.f, 1.f, 0.f);
     Mat4 viewMatrix = Mat4::lookAt(eye, target - eye, up);
@@ -69,10 +69,10 @@ void Intro::draw(Canvas &canvas) {
     canvas.setBlendMode(BlendMode::Add);
     canvas.setColor(Color::MediumBright);
 
-    for (int instance = -2; instance <= 2; ++instance) {
-        bool pulse = (_pulse_state >> (2 - instance)) & 1;
+    for (int instance = -3; instance <= 4; ++instance) {
+        bool pulse = (_pulse_state >> (4 - instance)) & 1;
 
-        Mat4 modelMatrix = Mat4::translate(Vec3(instance * 6.f, 0.f, pulse? -1.f : 0.f)) * Mat4::rotXYZ(Vec3((_time + instance) * 0.3, (_time + instance) * 0.7, (_time + instance) * 1.3));
+        Mat4 modelMatrix = Mat4::translate(Vec3(instance * 6.f - 3.f, 0.f, pulse? -1.f : 0.f)) * Mat4::rotXYZ(Vec3((_time + instance) * 0.3, (_time + instance) * 0.7, (_time + instance) * 1.3));
         Mat4 modelViewProjMatrix = projMatrix * viewMatrix * modelMatrix;
 
         for (int i = 0; i < 8; ++i) {
