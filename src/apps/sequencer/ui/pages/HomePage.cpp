@@ -65,7 +65,7 @@ void HomePage::editRoute(Routing::Target target, int trackIndex) {
 }
 
 void HomePage::draw(Canvas &canvas) {
-    //_manager.pages().overview.draw(canvas);
+    if (!isTop()) return;
 
     WindowPainter::clear(canvas);
 
