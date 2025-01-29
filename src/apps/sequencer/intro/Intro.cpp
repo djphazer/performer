@@ -57,12 +57,12 @@ void Intro::draw(Canvas &canvas) {
     canvas.fill();
     canvas.setColor(Color::Bright);
 
-    Vec3 eye(0.f, 0.f, -25.f);
+    Vec3 eye(0.f, 0.f, -20.f);
     Vec3 target(0.f);
     Vec3 up(0.f, 1.f, 0.f);
     Mat4 viewMatrix = Mat4::lookAt(eye, target - eye, up);
 
-    Mat4 projMatrix = Mat4::perspective(deg2rad(20.f), 1.f, 0.1f, 40.f);
+    Mat4 projMatrix = Mat4::perspective(deg2rad(30.f), 1.f, 0.1f, 40.f);
 
     Vec2 positions[8];
 
