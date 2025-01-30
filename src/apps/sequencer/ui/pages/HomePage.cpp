@@ -108,6 +108,26 @@ void HomePage::keyPress(KeyPressEvent &event) {
     auto &pages = _manager.pages();
     const auto &key = event.key();
 
+    if (isTop()) {
+        // if we're on top, every key navigates to somewhere...
+        if (key.isHome()) {
+            setMode(_mode); // go back where we came from
+        } else if (key.isTrackSelect()) {
+            // Track keys jump to Edit page
+            _project.setSelectedTrackIndex(key.trackSelect());
+            setMode(PageView::SequenceEdit);
+        } else if (key.isFunction()) {
+            // Nav shortcuts on F-keys
+            setMode( FunctionModeMap[key.function()] );
+        } else {
+            setMode(PageView(key.code()));
+        }
+
+        event.consume();
+        return;
+    }
+
+    // The rest of this is top-level key handling that should be handled in PageManager
     if (key.isTrack() && event.count() == 2) {
         setMode(PageView::SequenceEdit);
         event.consume();
@@ -119,31 +139,15 @@ void HomePage::keyPress(KeyPressEvent &event) {
         return;
     }
 
-    if (isTop()) {
-        if (key.isHome()) {
-            setMode(_mode); // go back where we came from
-        }
-        // if we're on top, every key navigates to somewhere...
-        if (key.isFunction()) {
-            // Nav shortcuts on F-keys
-            setMode( FunctionModeMap[key.function()] );
-        } else {
-            setMode(PageView(key.code()));
-        }
-
-        _context.globalKeyState[ Key::Shift ] = false;
+    if (key.isPattern() && _mode != PageView::Pattern) {
+        pages.pattern.setModal(true);
+        pages.pattern.show();
         event.consume();
-    } else {
-        if (key.isPattern() && _mode != PageView::Pattern) {
-            pages.pattern.setModal(true);
-            pages.pattern.show();
-            event.consume();
-        }
-        if (key.isPerformer() && _mode != PageView::Performer) {
-            pages.performer.setModal(true);
-            pages.performer.show();
-            event.consume();
-        }
+    }
+    if (key.isPerformer() && _mode != PageView::Performer) {
+        pages.performer.setModal(true);
+        pages.performer.show();
+        event.consume();
     }
 
     if (key.isPlay()) {
