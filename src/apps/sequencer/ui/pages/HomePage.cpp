@@ -108,6 +108,22 @@ void HomePage::keyPress(KeyPressEvent &event) {
     auto &pages = _manager.pages();
     const auto &key = event.key();
 
+    if (key.isPlay()) {
+        if (key.pageModifier()) {
+            _engine.toggleRecording();
+        } else {
+            _engine.togglePlay(key.shiftModifier());
+        }
+        event.consume();
+    }
+
+    if (key.isTempo()) {
+        if (!key.shiftModifier()) {
+            // tempo page
+            pages.tempo.show();
+            event.consume();
+        }
+    }
     if (isTop()) {
         // if we're on top, every key navigates to somewhere...
         if (key.isHome()) {
@@ -149,24 +165,6 @@ void HomePage::keyPress(KeyPressEvent &event) {
         pages.performer.show();
         event.consume();
     }
-
-    if (key.isPlay()) {
-        if (key.pageModifier()) {
-            _engine.toggleRecording();
-        } else {
-            _engine.togglePlay(key.shiftModifier());
-        }
-        event.consume();
-    }
-
-    if (key.isTempo()) {
-        if (!key.pageModifier()) {
-            // tempo page
-            pages.tempo.show();
-        }
-    }
-
-    event.consume();
 }
 
 void HomePage::encoder(EncoderEvent &event) {
