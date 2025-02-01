@@ -44,6 +44,7 @@ public:
     int currentRecordStep() const { return _stepRecorder.stepIndex(); }
 
     void setMonitorStep(int index);
+    void setMonitorNote(int8_t semitone, int8_t octave, bool noteOn);
 
 private:
     void triggerStep(uint32_t tick, uint32_t divisor);
@@ -67,6 +68,7 @@ private:
     bool _prevCondition;
 
     int _monitorStepIndex = -1;
+    int _monitorNote = 0;
 
     RecordHistory _recordHistory;
     bool _monitorOverrideActive = false;

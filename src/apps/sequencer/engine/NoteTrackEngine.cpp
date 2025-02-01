@@ -245,7 +245,10 @@ void NoteTrackEngine::update(float dt) {
         (monitorMode == Types::MonitorMode::Always) ||
         (monitorMode == Types::MonitorMode::Stopped && !running);
 
-    if (stepMonitoring) {
+    if (_monitorStepIndex < -1) {
+        int note = _monitorNote + evalTransposition(scale, octave, transpose);
+        setOverride(scale.noteToVolts(note) + (scale.isChromatic() ? rootNote : 0) * (1.f / 12.f));
+    } else if (stepMonitoring) {
         const auto &step = sequence.step(_monitorStepIndex);
         setOverride(evalStepNote(step, 0, scale, rootNote, octave, transpose, false));
     } else if (liveMonitoring && _recordHistory.isNoteActive()) {
@@ -286,6 +289,18 @@ void NoteTrackEngine::setMonitorStep(int index) {
     if (_engine.recording() && _model.project().recordMode() == Types::RecordMode::StepRecord &&
         index >= _sequence->firstStep() && index <= _sequence->lastStep()) {
         _stepRecorder.setStepIndex(index);
+    }
+}
+void NoteTrackEngine::setMonitorNote(int8_t semitone, int8_t octave, bool noteOn = true) {
+    _monitorStepIndex = noteOn? -2 : -1;
+    _monitorNote = semitone + 12*octave;
+
+    // TODO: construct a fake MidiMessage
+    //monitorMidi(tick, message);
+    //_recordHistory.write(tick, message);
+
+    if (_engine.recording() && _model.project().recordMode() == Types::RecordMode::StepRecord) {
+        _stepRecorder.processNote(semitone + 12*octave, noteOn, *_sequence);
     }
 }
 

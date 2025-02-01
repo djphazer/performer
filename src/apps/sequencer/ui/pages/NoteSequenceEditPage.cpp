@@ -63,6 +63,7 @@ NoteSequenceEditPage::NoteSequenceEditPage(PageManager &manager, PageContext &co
 void NoteSequenceEditPage::enter() {
     updateMonitorStep();
 
+    _octave = 0;
     _showDetail = false;
 }
 
@@ -74,6 +75,10 @@ void NoteSequenceEditPage::draw(Canvas &canvas) {
     WindowPainter::clear(canvas);
     WindowPainter::drawHeader(canvas, _model, _engine, "STEPS");
     WindowPainter::drawActiveFunction(canvas, NoteSequence::layerName(layer()));
+    if (_noteEntryMode) {
+        FixedStringBuilder<16> str("(kbd mode) %d", _octave);
+        canvas.drawText(130, 8 - 2, str);
+    }
     WindowPainter::drawFooter(canvas, functionNames, globalKeyState(), activeFunctionKey());
 
     const auto &trackEngine = _engine.selectedTrackEngine().as<NoteTrackEngine>();
@@ -248,17 +253,31 @@ void NoteSequenceEditPage::draw(Canvas &canvas) {
 }
 
 void NoteSequenceEditPage::updateLeds(Leds &leds) {
+    const bool kbdModeMap[] = {
+        0, 1, 1, 0, 1, 1, 1, 0,
+        1, 1, 1, 1, 1, 1, 1, 1,
+    };
     const auto &trackEngine = _engine.selectedTrackEngine().as<NoteTrackEngine>();
     const auto &sequence = _project.selectedNoteSequence();
     int currentStep = trackEngine.isActiveSequence(sequence) ? trackEngine.currentStep() : -1;
 
-    for (int i = 0; i < 16; ++i) {
-        int stepIndex = stepOffset() + i;
-        bool red = (stepIndex == currentStep) || _stepSelection[stepIndex];
-        bool green = (stepIndex != currentStep) && (sequence.step(stepIndex).gate() || _stepSelection[stepIndex]);
-        leds.set(MatrixMap::fromStep(i), red, green);
+    if (_noteEntryMode) {
+        for (int i = 0; i < 16; ++i) {
+            bool green = kbdModeMap[i];
+            bool red = globalKeyState()[MatrixMap::fromStep(i)] && green;
+            leds.set(MatrixMap::fromStep(i), red, green);
+        }
+    } else {
+        // steps and selection
+        for (int i = 0; i < 16; ++i) {
+            int stepIndex = stepOffset() + i;
+            bool red = (stepIndex == currentStep) || _stepSelection[stepIndex];
+            bool green = (stepIndex != currentStep) && (sequence.step(stepIndex).gate() || _stepSelection[stepIndex]);
+            leds.set(MatrixMap::fromStep(i), red, green);
+        }
     }
 
+    // global segment indicator on Prev/Next/Shift/Page leds
     LedPainter::drawSelectedSequenceSection(leds, _section);
 
     // show quick edit keys
@@ -272,12 +291,37 @@ void NoteSequenceEditPage::updateLeds(Leds &leds) {
     }
 }
 
+static const int8_t StepSemitoneMap[] = {
+   -1, 1, 3, -1, 6, 8, 10, -1, // middle row = black keys
+    0, 2, 4, 5,  7, 9, 11, 12, // bottom row = white keys
+};
 void NoteSequenceEditPage::keyDown(KeyEvent &event) {
+    if (_noteEntryMode) {
+        if (event.key().isStep()) {
+            // generate NoteOn event
+            auto &trackEngine = _engine.selectedTrackEngine().as<NoteTrackEngine>();
+            const int8_t semi = StepSemitoneMap[event.key().step()];
+            if (semi >= 0)
+                trackEngine.setMonitorNote(semi, _octave, true);
+            event.consume();
+        }
+        return;
+    }
     _stepSelection.keyDown(event, stepOffset());
     updateMonitorStep();
 }
-
 void NoteSequenceEditPage::keyUp(KeyEvent &event) {
+    if (_noteEntryMode) {
+        if (event.key().isStep() && !event.key().stepsHeld()) {
+            // generate NoteOff event
+            auto &trackEngine = _engine.selectedTrackEngine().as<NoteTrackEngine>();
+            const int8_t semi = StepSemitoneMap[event.key().step()];
+            if (semi >= 0)
+                trackEngine.setMonitorNote(semi, _octave, false);
+            event.consume();
+        }
+        return;
+    }
     _stepSelection.keyUp(event, stepOffset());
     updateMonitorStep();
 }
@@ -294,6 +338,12 @@ void NoteSequenceEditPage::keyPress(KeyPressEvent &event) {
 
     if (key.isQuickEdit()) {
         quickEdit(key.quickEdit());
+        event.consume();
+        return;
+    }
+
+    if (_noteEntryMode && key.isStep()) {
+        // TODO
         event.consume();
         return;
     }
@@ -329,6 +379,8 @@ void NoteSequenceEditPage::keyPress(KeyPressEvent &event) {
     if (key.isLeft()) {
         if (key.shiftModifier()) {
             sequence.shiftSteps(_stepSelection.selected(), -1);
+        } else if (_noteEntryMode) {
+            _octave = std::max(-5, _octave - 1);
         } else {
             _section = std::max(0, _section - 1);
         }
@@ -337,6 +389,8 @@ void NoteSequenceEditPage::keyPress(KeyPressEvent &event) {
     if (key.isRight()) {
         if (key.shiftModifier()) {
             sequence.shiftSteps(_stepSelection.selected(), 1);
+        } else if (_noteEntryMode) {
+            _octave = std::min(5, _octave + 1);
         } else {
             _section = std::min(3, _section + 1);
         }
@@ -449,6 +503,7 @@ void NoteSequenceEditPage::switchLayer(int functionKey, bool shift) {
             break;
         case Function::Note:
             setLayer(Layer::Note);
+            _noteEntryMode = true;
             break;
         case Function::Condition:
             setLayer(Layer::Condition);

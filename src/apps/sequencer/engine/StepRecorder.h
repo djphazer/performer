@@ -29,6 +29,31 @@ public:
         _stepIndex = stepIndex;
     }
 
+    void processNote(int8_t note, bool noteOn, NoteSequence &sequence) {
+        if (noteOn) {
+            // record to step
+            auto &step = sequence.step(_stepIndex);
+            step.setGate(true);
+            step.setLength(NoteSequence::Length::Max / 2);
+            step.setNote(note);
+
+            // remember last edited step
+            _pressedNote = note;
+            _pressedStepIndex = _stepIndex;
+        } else {
+            // Note off
+            if (note == _pressedNote) {
+                _pressedNote = -1;
+                _pressedStepIndex = -1;
+
+                // move to next step
+                ++_stepIndex;
+                if (_stepIndex > sequence.lastStep()) {
+                    _stepIndex = sequence.firstStep();
+                }
+            }
+        }
+    }
     void process(const MidiMessage &message, NoteSequence &sequence, std::function<int(int)> noteFromMidiNote) {
         if (message.isNoteOn()) {
             // record to step

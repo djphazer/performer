@@ -172,6 +172,12 @@ public:
         return _state[Track0] || _state[Track1] || _state[Track2] || _state[Track3] ||
                _state[Track4] || _state[Track5] || _state[Track6] || _state[Track7];
     }
+    bool stepsHeld() const {
+        return _state[Step0] || _state[Step0] || _state[Step2] || _state[Step3] ||
+               _state[Step4] || _state[Step5] || _state[Step6] || _state[Step7] ||
+               _state[Step8] || _state[Step9] || _state[Step10] || _state[Step11] ||
+               _state[Step12] || _state[Step13] || _state[Step14] || _state[Step15];
+    }
 
     bool is(int code) const { return _code == code; }
 

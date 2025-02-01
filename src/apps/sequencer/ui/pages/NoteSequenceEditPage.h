@@ -54,11 +54,17 @@ private:
     void setSelectedStepsGate(bool gate);
 
     NoteSequence::Layer layer() const { return _project.selectedNoteSequenceLayer(); };
-    void setLayer(NoteSequence::Layer layer) { _project.setSelectedNoteSequenceLayer(layer); }
+    void setLayer(NoteSequence::Layer layer) {
+        _project.setSelectedNoteSequenceLayer(layer);
+        _noteEntryMode = false;
+    }
 
     int _section = 0;
     bool _showDetail;
     uint32_t _showDetailTicks;
+
+    bool _noteEntryMode;
+    int8_t _octave;
 
     NoteSequenceListModel _listModel;
 
