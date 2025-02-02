@@ -53,7 +53,7 @@ void ContextMenuPage::draw(Canvas &canvas) {
 void ContextMenuPage::keyUp(KeyEvent &event) {
     const auto &key = event.key();
 
-    if (!key.shiftModifier()) {
+    if (!key.shiftModifier() && !key.isShift()) {
         close();
         event.consume();
     }
@@ -68,6 +68,10 @@ void ContextMenuPage::keyPress(KeyPressEvent &event) {
             closeAndCallback(itemIndex);
         }
         clearModifiers();
+        event.consume();
+    }
+    if (key.isShift() || key.isPage()) {
+        close();
         event.consume();
     }
 }

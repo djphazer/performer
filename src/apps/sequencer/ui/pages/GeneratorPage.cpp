@@ -125,7 +125,7 @@ void GeneratorPage::keyUp(KeyEvent &event) {
 void GeneratorPage::keyPress(KeyPressEvent &event) {
     const auto &key = event.key();
 
-    if (key.isContextMenu()) {
+    if (key.shiftModifier() || key.isContextMenu()) {
         contextShow();
         event.consume();
         return;

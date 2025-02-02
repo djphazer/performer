@@ -168,6 +168,10 @@ public:
 
     bool shiftModifier() const { return _state[Shift]; }
     bool pageModifier() const { return _state[Page]; }
+    bool trackModifier() const {
+        return _state[Track0] || _state[Track1] || _state[Track2] || _state[Track3] ||
+               _state[Track4] || _state[Track5] || _state[Track6] || _state[Track7];
+    }
 
     bool is(int code) const { return _code == code; }
 
@@ -180,7 +184,7 @@ public:
     bool isLeft() const { return _code == Left; }
     bool isRight() const { return _code == Right; }
     bool isPage() const { return _code == Page; };
-    bool isHome() const { return _code == Home; };
+    bool isHome() const { return _code == Page && !shiftModifier(); };
     bool isShift() const { return _code == Shift; }
 
     // button groups
@@ -209,10 +213,10 @@ public:
         return -1;
     }
 
-    bool isQuickEdit() const { return pageModifier() && isStep() && step() >= 8; }
+    bool isQuickEdit() const { return trackModifier() && isStep() && step() >= 8; }
     int quickEdit() const { return step() - 8; }
 
-    bool isContextMenu() const { return shiftModifier() && isShift(); }
+    bool isContextMenu() const { return shiftModifier() && isPage(); }
 
     bool isEncoder() const { return is(Encoder); }
 
