@@ -284,12 +284,8 @@ void PatternPage::keyPress(KeyPressEvent &event) {
         event.consume();
     }
 
-    if (key.isLeft()) {
-        _project.editSelectedPatternIndex(-1, false);
-        event.consume();
-    }
-    if (key.isRight()) {
-        _project.editSelectedPatternIndex(1, false);
+    if (key.isLeft() || key.isRight()) {
+        _manager.setView(Key::Performer);
         event.consume();
     }
 }

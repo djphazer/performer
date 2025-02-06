@@ -218,6 +218,11 @@ void PerformerPage::keyPress(KeyPressEvent &event) {
         }
         event.consume();
     }
+
+    if (key.isLeft() || key.isRight()) {
+        _manager.setView(Key::Pattern);
+        event.consume();
+    }
 }
 
 void PerformerPage::encoder(EncoderEvent &event) {
