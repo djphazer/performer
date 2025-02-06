@@ -222,7 +222,7 @@ public:
     bool isQuickEdit() const { return trackModifier() && isStep() && step() >= 8; }
     int quickEdit() const { return step() - 8; }
 
-    bool isContextMenu() const { return shiftModifier() && isPage(); }
+    bool isContextMenu() const { return shiftModifier(); }
 
     bool isEncoder() const { return is(Encoder); }
 

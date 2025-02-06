@@ -330,7 +330,7 @@ void NoteSequenceEditPage::keyPress(KeyPressEvent &event) {
     const auto &key = event.key();
     auto &sequence = _project.selectedNoteSequence();
 
-    if (key.isContextMenu()) {
+    if (key.isContextMenu() && key.pageModifier()) {
         contextShow();
         event.consume();
         return;
