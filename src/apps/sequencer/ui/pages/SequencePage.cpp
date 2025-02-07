@@ -73,6 +73,11 @@ void SequencePage::keyPress(KeyPressEvent &event) {
         return;
     }
 
+    if (key.isLeft() || key.isRight()) {
+        _manager.setView(key.isLeft()? Key::SequenceEdit : Key::Track);
+        event.consume();
+        return;
+    }
     if (key.isFunction()) {
         _manager.setView(FunctionModeMap[key.function()]);
         event.consume();
