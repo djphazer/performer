@@ -57,6 +57,12 @@ void RoutingPage::keyPress(KeyPressEvent &event) {
         return;
     }
 
+    if (key.isLeft() || key.isRight()) {
+        _manager.setView(key.isLeft()? Key::Layout : Key::MidiOutput);
+        event.consume();
+        return;
+    }
+
     if (key.isFunction()) {
         switch (Function(key.function())) {
         case Function::Prev:

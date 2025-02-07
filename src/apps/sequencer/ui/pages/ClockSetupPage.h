@@ -9,6 +9,7 @@ public:
     ClockSetupPage(PageManager &manager, PageContext &context);
 
     virtual void draw(Canvas &canvas) override;
+    virtual void keyPress(KeyPressEvent &event) override;
 
 private:
     ClockSetupListModel _listModel;

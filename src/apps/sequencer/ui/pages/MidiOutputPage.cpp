@@ -45,6 +45,12 @@ void MidiOutputPage::draw(Canvas &canvas) {
 void MidiOutputPage::keyPress(KeyPressEvent &event) {
     const auto &key = event.key();
 
+    if (key.isLeft() || key.isRight()) {
+        _manager.setView(key.isLeft()? Key::Routing : Key::Monitor);
+        event.consume();
+        return;
+    }
+
     if (key.isFunction()) {
         switch (Function(key.function())) {
         case Function::Prev:

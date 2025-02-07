@@ -120,6 +120,12 @@ void MonitorPage::updateLeds(Leds &leds) {
 void MonitorPage::keyPress(KeyPressEvent &event) {
     const auto &key = event.key();
 
+    if (key.isLeft() || key.isRight()) {
+        _manager.setView(key.isLeft()? Key::MidiOutput : Key::System);
+        event.consume();
+        return;
+    }
+
     if (key.isFunction()) {
         switch (Function(key.function())) {
         case Function::CvIn:
@@ -138,6 +144,7 @@ void MonitorPage::keyPress(KeyPressEvent &event) {
             _mode = Mode::Version;
             break;
         }
+        event.consume();
     }
 }
 

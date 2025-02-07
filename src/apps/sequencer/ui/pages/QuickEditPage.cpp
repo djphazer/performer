@@ -51,10 +51,8 @@ void QuickEditPage::keyDown(KeyEvent &event) {
 void QuickEditPage::keyUp(KeyEvent &event) {
     event.consume();
 
-    if (globalKeyState()[Key::Page]) {
-        clearModifiers();
-        return;
-    }
+    if (event.key().trackModifier()) return;
+
     for (int i = 8; i < 16; ++i) {
         if (globalKeyState()[MatrixMap::fromStep(i)]) {
             return;

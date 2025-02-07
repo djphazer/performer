@@ -35,6 +35,12 @@ void LayoutPage::draw(Canvas &canvas) {
 void LayoutPage::keyPress(KeyPressEvent &event) {
     const auto &key = event.key();
 
+    if (key.isLeft() || key.isRight()) {
+        _manager.setView(key.isLeft()? Key::Project : Key::Routing);
+        event.consume();
+        return;
+    }
+
     if (key.isFunction()) {
         if (key.function() == 4 && _mode == Mode::TrackMode && !_trackModeListModel.sameAsProject(_project)) {
             _manager.pages().confirmation.show("ARE YOU SURE?", [this] (bool result) {

@@ -17,3 +17,12 @@ void ClockSetupPage::draw(Canvas &canvas) {
 
     ListPage::draw(canvas);
 }
+
+void ClockSetupPage::keyPress(KeyPressEvent &event) {
+    if (event.key().isRight()) {
+        _manager.setView(Key::Project);
+        event.consume();
+        return;
+    }
+    ListPage::keyPress(event);
+}

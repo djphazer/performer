@@ -118,7 +118,7 @@ void HomePage::keyPress(KeyPressEvent &event) {
     }
 
     if (key.isTempo()) {
-        if (!key.shiftModifier()) {
+        if (!key.shiftModifier() && !key.pageModifier()) {
             // tempo page
             pages.tempo.show();
             event.consume();
@@ -126,7 +126,7 @@ void HomePage::keyPress(KeyPressEvent &event) {
     }
     if (isTop()) {
         // if we're on top, every key navigates to somewhere...
-        if (key.isHome()) {
+        if (key.isHome() || key.isEncoder()) {
             setMode(_mode); // go back where we came from
         } else if (key.isTrackSelect()) {
             // Track keys jump to Edit page
@@ -135,6 +135,10 @@ void HomePage::keyPress(KeyPressEvent &event) {
         } else if (key.isFunction()) {
             // Nav shortcuts on F-keys
             setMode( FunctionModeMap[key.function()] );
+        } else if (key.isLeft() || key.isRight()) {
+            // TODO: something like this to scroll thru modes
+            // (but this won't work because the enum is not sequential)
+            //_mode += key.isLeft() ? -1 : 1;
         } else {
             setMode(PageView(key.code()));
         }
@@ -143,7 +147,7 @@ void HomePage::keyPress(KeyPressEvent &event) {
         return;
     }
 
-    // The rest of this is top-level key handling that should be handled in PageManager
+    // The rest of this is top-level key handling that could be handled in PageManager
     if (key.isTrack() && event.count() == 2) {
         setMode(PageView::SequenceEdit);
         event.consume();

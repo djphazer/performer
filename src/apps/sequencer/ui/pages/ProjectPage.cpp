@@ -69,6 +69,13 @@ void ProjectPage::keyPress(KeyPressEvent &event) {
     if (key.isFunction()) {
         _manager.setView(FunctionModeMap[key.function()]);
         event.consume();
+        return;
+    }
+
+    if (key.isLeft() || key.isRight()) {
+        _manager.setView(key.isLeft()? Key::Clock : Key::Layout);
+        event.consume();
+        return;
     }
 
     if (key.isEncoder() && selectedRow() == 0) {
