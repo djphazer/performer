@@ -29,10 +29,6 @@ private:
 
     uint8_t pressedTrackKeys() const;
 
-    void contextShow();
-    void contextAction(int index);
-    bool contextActionEnabled(int index) const;
-
     void initSong();
 
     enum class Mode : uint8_t {

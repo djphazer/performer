@@ -10,21 +10,15 @@
 
 #include "core/utils/StringBuilder.h"
 
-enum class ContextAction {
-    Init,
-    Last
-};
-
-static const ContextMenuModel::Item contextMenuItems[] = {
-    { "INIT" },
-};
-
 enum class Function {
     Chain       = 0,
     Add         = 1,
     Remove      = 2,
     Duplicate   = 3,
     PlayStop    = 4,
+
+    Init = Chain,
+    Insert = Add,
 };
 
 SongPage::SongPage(PageManager &manager, PageContext &context) :
@@ -50,7 +44,7 @@ void SongPage::draw(Canvas &canvas) {
 
     bool isShift = globalKeyState()[Key::Shift];
     bool isPlaying = songState.playing();
-    const char *functionNames[] = { "CHAIN", isShift ? "INSERT" : "ADD", "REMOVE", "DUPL", isPlaying ? "STOP" : "PLAY" };
+    const char *functionNames[] = { isShift ? "INIT" : "CHAIN", isShift ? "INSERT" : "ADD", "REMOVE", "DUPL", isPlaying ? "STOP" : "PLAY" };
 
     uint8_t selectedTracks = pressedTrackKeys();
 
@@ -191,7 +185,7 @@ void SongPage::updateLeds(Leds &leds) {
 void SongPage::keyDown(KeyEvent &event) {
     const auto &key = event.key();
 
-    if (key.isFunction()) {
+    if (key.isFunction() && !key.shiftModifier()) {
         switch (Function(key.function())) {
         case Function::Chain:
             _mode = Mode::Chain;
@@ -217,12 +211,7 @@ void SongPage::keyPress(KeyPressEvent &event) {
     auto &song = _project.song();
     auto &playState = _project.playState();
     uint8_t selectedTracks = pressedTrackKeys();
-
-    if (key.isContextMenu()) {
-        contextShow();
-        event.consume();
-        return;
-    }
+    const bool isShift = key.shiftModifier();
 
     if (key.isTrackSelect()) {
         event.consume();
@@ -230,8 +219,11 @@ void SongPage::keyPress(KeyPressEvent &event) {
 
     if (key.isFunction()) {
         switch (Function(key.function())) {
+        case Function::Init:
+            if (isShift) initSong();
+            break;
         case Function::Add:
-            if (key.shiftModifier()) {
+            if (isShift) {
                 song.insertSlot(std::max(0, _selectedSlot));
                 setSelectedSlot(_selectedSlot);
             } else {
@@ -251,7 +243,7 @@ void SongPage::keyPress(KeyPressEvent &event) {
             if (playState.songState().playing()) {
                 playState.stopSong();
             } else {
-                playState.playSong(_selectedSlot, (key.shiftModifier() && _engine.clockRunning()) ? PlayState::ExecuteType::Synced : PlayState::ExecuteType::Immediate);
+                playState.playSong(_selectedSlot, (isShift && _engine.clockRunning()) ? PlayState::ExecuteType::Synced : PlayState::ExecuteType::Immediate);
             }
             break;
         default:
@@ -269,14 +261,14 @@ void SongPage::keyPress(KeyPressEvent &event) {
                 }
             }
         } else {
-            playState.playSong(_selectedSlot, (key.shiftModifier() && _engine.clockRunning()) ? PlayState::ExecuteType::Synced : PlayState::ExecuteType::Immediate);
+            playState.playSong(_selectedSlot, (isShift && _engine.clockRunning()) ? PlayState::ExecuteType::Synced : PlayState::ExecuteType::Immediate);
         }
 
         event.consume();
     }
 
     if (key.isStep()) {
-        if (key.shiftModifier()) {
+        if (isShift) {
             song.setRepeats(_selectedSlot, key.step() + 1);
         } else {
             int pattern = key.step();
@@ -311,11 +303,11 @@ void SongPage::keyPress(KeyPressEvent &event) {
     }
 
     if (key.isLeft()) {
-        moveSelectedSlot(-1, key.shiftModifier());
+        moveSelectedSlot(-1, isShift);
         event.consume();
     }
     if (key.isRight()) {
-        moveSelectedSlot(1, key.shiftModifier());
+        moveSelectedSlot(1, isShift);
         event.consume();
     }
 }
@@ -371,32 +363,6 @@ uint8_t SongPage::pressedTrackKeys() const {
         }
     }
     return tracks;
-}
-
-void SongPage::contextShow() {
-    showContextMenu(ContextMenu(
-        contextMenuItems,
-        int(ContextAction::Last),
-        [&] (int index) { contextAction(index); },
-        [&] (int index) { return contextActionEnabled(index); }
-    ));
-}
-
-void SongPage::contextAction(int index) {
-    switch (ContextAction(index)) {
-    case ContextAction::Init:
-        initSong();
-        break;
-    case ContextAction::Last:
-        break;
-    }
-}
-
-bool SongPage::contextActionEnabled(int index) const {
-    switch (ContextAction(index)) {
-    default:
-        return true;
-    }
 }
 
 void SongPage::initSong() {
