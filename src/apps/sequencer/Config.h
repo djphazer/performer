@@ -7,7 +7,7 @@
 #define CONFIG_VERSION_NAME             "PEW|former Alpha"
 #define CONFIG_VERSION_MAJOR            0
 #define CONFIG_VERSION_MINOR            99
-#define CONFIG_VERSION_REVISION         7
+#define CONFIG_VERSION_REVISION         8
 
 // Task priorities
 #define CONFIG_DRIVER_TASK_PRIORITY     5
