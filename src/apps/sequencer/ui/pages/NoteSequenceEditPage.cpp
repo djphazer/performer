@@ -343,7 +343,17 @@ void NoteSequenceEditPage::keyPress(KeyPressEvent &event) {
     }
 
     if (_noteEntryMode && key.isStep()) {
-        // TODO
+        switch (key.step()) {
+        case 0: // octave down
+            _octave = std::max(-5, _octave - 1);
+            break;
+        case 3: // middle button inserts a rest
+            // TODO
+            break;
+        case 7: // octave up
+            _octave = std::min(5, _octave + 1);
+            break;
+        }
         event.consume();
         return;
     }
