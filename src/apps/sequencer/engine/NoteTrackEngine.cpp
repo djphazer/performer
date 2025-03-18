@@ -295,12 +295,22 @@ void NoteTrackEngine::setMonitorNote(int8_t semitone, int8_t octave, bool noteOn
     _monitorStepIndex = noteOn? -2 : -1;
     _monitorNote = semitone + 12*octave;
 
-    // TODO: construct a fake MidiMessage
-    //monitorMidi(tick, message);
-    //_recordHistory.write(tick, message);
+    //static MidiMessage makeNoteOff(uint8_t channel, uint8_t note, uint8_t velocity = 0) {
+    //static MidiMessage makeNoteOn(uint8_t channel, uint8_t note, uint8_t velocity = 127) {
+    if (noteOn)
+        monitorMidi(_engine.clock().tick(), MidiMessage::makeNoteOn(0, _monitorNote + 60));
+    else
+        monitorMidi(_engine.clock().tick(), MidiMessage::makeNoteOff(0, _monitorNote + 60));
 
+    /*
     if (_engine.recording() && _model.project().recordMode() == Types::RecordMode::StepRecord) {
         _stepRecorder.processNote(semitone + 12*octave, noteOn, *_sequence);
+    }
+    */
+}
+void NoteTrackEngine::insertRest() {
+    if (_engine.recording() && _model.project().recordMode() == Types::RecordMode::StepRecord) {
+        _stepRecorder.processNote(_monitorNote, -1, *_sequence);
     }
 }
 

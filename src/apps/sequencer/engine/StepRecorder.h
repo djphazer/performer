@@ -29,8 +29,8 @@ public:
         _stepIndex = stepIndex;
     }
 
-    void processNote(int8_t note, bool noteOn, NoteSequence &sequence) {
-        if (noteOn) {
+    void processNote(int8_t note, int8_t noteOn, NoteSequence &sequence) {
+        if (noteOn > 0) {
             // record to step
             auto &step = sequence.step(_stepIndex);
             step.setGate(true);
@@ -41,8 +41,8 @@ public:
             _pressedNote = note;
             _pressedStepIndex = _stepIndex;
         } else {
-            // Note off
-            if (note == _pressedNote) {
+            // Note off or rest
+            if (noteOn < 0 || note == _pressedNote) {
                 _pressedNote = -1;
                 _pressedStepIndex = -1;
 

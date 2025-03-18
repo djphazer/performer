@@ -45,6 +45,7 @@ public:
 
     void setMonitorStep(int index);
     void setMonitorNote(int8_t semitone, int8_t octave, bool noteOn);
+    void insertRest();
 
 private:
     void triggerStep(uint32_t tick, uint32_t divisor);

@@ -348,7 +348,7 @@ void NoteSequenceEditPage::keyPress(KeyPressEvent &event) {
             _octave = std::max(-5, _octave - 1);
             break;
         case 3: // middle button inserts a rest
-            // TODO
+            _engine.selectedTrackEngine().as<NoteTrackEngine>().insertRest();
             break;
         case 7: // octave up
             _octave = std::min(5, _octave + 1);
