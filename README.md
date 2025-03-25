@@ -12,13 +12,12 @@ After encountering instability on the mebitek fork, I've decided to start from t
 
 Some things are broken... it will get worse before it gets better!
 
-* Latching Shift key modifier
 * Page key invokes a new "Home" page, with navigation shortcuts to other pages
 * Extra nav shortcuts on Project, Track, and Sequence pages
 * Double-click Track buttons to jump to Sequence edit page from most places
+* Access QuickEdit by holding Track button (instead of Page)
+* Latching Shift-key context menus
 * Cubes screensaver
-
-TODO: QuickEdit settings in Sequence editors - hard to access after making Page key into the HomePage key...
 
 ## jackpf Improvements
 
