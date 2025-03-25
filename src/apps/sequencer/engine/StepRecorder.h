@@ -43,6 +43,9 @@ public:
         } else {
             // Note off or rest
             if (noteOn < 0 || note == _pressedNote) {
+                if (noteOn < 0) { // rest
+                    sequence.step(_stepIndex).setGate(false);
+                }
                 _pressedNote = -1;
                 _pressedStepIndex = -1;
 
