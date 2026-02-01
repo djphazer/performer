@@ -148,6 +148,17 @@ void MidiOutputEngine::sendCv(int trackIndex, float cv) {
     }
 }
 
+void MidiOutputEngine::sendVelocity(int trackIndex, int velocity) {
+    for (int outputIndex = 0; outputIndex < CONFIG_MIDI_OUTPUT_COUNT; ++outputIndex) {
+        const auto &output = _midiOutput.output(outputIndex);
+        auto &outputState = _outputStates[outputIndex];
+
+        if (output.takesVelocityFromTrack(trackIndex)) {
+            outputState.velocity = clamp(velocity, 0, 127);
+        }
+    }
+}
+
 void MidiOutputEngine::sendProgramChange(int channel, int programNumber) {
     auto pgmChangeMessage = MidiMessage::makeProgramChange(channel, programNumber);
 

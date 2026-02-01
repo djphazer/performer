@@ -209,22 +209,25 @@ void NoteTrackEngine::update(float dt) {
     }
 
     // helper to send gate/cv from monitoring to midi output engine
-    auto sendToMidiOutputEngine = [this] (bool gate, float cv = 0.f) {
+    auto sendToMidiOutputEngine = [this] (bool gate, float cv = 0.f, int velocity = -1) {
         auto &midiOutputEngine = _engine.midiOutputEngine();
-        midiOutputEngine.sendGate(_track.trackIndex(), gate);
         if (gate) {
             midiOutputEngine.sendCv(_track.trackIndex(), cv);
+            if (velocity >= 0) {
+                midiOutputEngine.sendVelocity(_track.trackIndex(), velocity);
+            }
             midiOutputEngine.sendSlide(_track.trackIndex(), false);
         }
+        midiOutputEngine.sendGate(_track.trackIndex(), gate);
     };
 
     // set monitor override
-    auto setOverride = [&] (float cv) {
+    auto setOverride = [&] (float cv, int velocity = -1) {
         _cvOutputTarget = cv;
         _activity = _gateOutput = true;
         _monitorOverrideActive = true;
         // pass through to midi engine
-        sendToMidiOutputEngine(true, cv);
+        sendToMidiOutputEngine(true, cv, velocity);
     };
 
     // clear monitor override
@@ -250,7 +253,8 @@ void NoteTrackEngine::update(float dt) {
         setOverride(evalStepNote(step, 0, scale, rootNote, octave, transpose, false));
     } else if (liveMonitoring && _recordHistory.isNoteActive()) {
         int note = noteFromMidiNote(_recordHistory.activeNote()) + evalTransposition(scale, octave, transpose);
-        setOverride(scale.noteToVolts(note) + (scale.isChromatic() ? rootNote : 0) * (1.f / 12.f));
+        setOverride(scale.noteToVolts(note) + (scale.isChromatic() ? rootNote : 0) * (1.f / 12.f),
+            _engine.liveMonitorVelocity(_track.trackIndex()));
     } else {
         clearOverride();
     }

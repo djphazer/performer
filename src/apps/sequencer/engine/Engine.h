@@ -143,6 +143,8 @@ public:
     const MidiLearn &midiLearn() const { return _midiLearn; }
           MidiLearn &midiLearn()       { return _midiLearn; }
 
+    int liveMonitorVelocity(int trackIndex) const { return _midiMonitoring.liveVelocity[trackIndex]; }
+
     bool trackEnginesConsistent() const;
     bool trackPatternsConsistent() const;
 
@@ -244,6 +246,7 @@ private:
 
         int8_t lastNote = -1;
         int8_t lastTrack = -1;
+        std::array<int8_t, CONFIG_TRACK_COUNT> liveVelocity;
     } _midiMonitoring;
 
     // TODO Could be a setting if needed
