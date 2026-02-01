@@ -23,6 +23,7 @@ Engine::Engine(Model &model, ClockTimer &clockTimer, Adc &adc, Dac &dac, Dio &di
 {
     _cvOutputOverrideValues.fill(0.f);
     _trackEngines.fill(nullptr);
+    _midiMonitoring.liveVelocity.fill(100);
 
     _usbMidi.setConnectHandler([this] (uint16_t vendorId, uint16_t productId) { usbMidiConnect(vendorId, productId); });
     _usbMidi.setDisconnectHandler([this] () { usbMidiDisconnect(); });
@@ -783,6 +784,8 @@ void Engine::receiveMidi(MidiPort port, uint8_t cable, const MidiMessage &messag
     for (auto trackEngine : _trackEngines) {
         consumed |= trackEngine->receiveMidi(port, message);
     }
+
+    // Allow midi monitoring without MIDI/CV consuming everything
     if (consumed) {
         return;
     }
@@ -819,6 +822,7 @@ void Engine::monitorMidi(const MidiMessage &message) {
         }
         // send note on
         sendMidi(currentTrack, MidiMessage::makeNoteOn(0, message.note(), message.velocity()));
+        _midiMonitoring.liveVelocity[currentTrack] = message.velocity();
         _midiMonitoring.lastNote = message.note();
         _midiMonitoring.lastTrack = currentTrack;
     } else if (message.isNoteOff()) {

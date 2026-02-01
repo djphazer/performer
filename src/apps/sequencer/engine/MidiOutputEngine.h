@@ -24,6 +24,7 @@ public:
     void sendGate(int trackIndex, bool gate);
     void sendSlide(int trackIndex, bool slide);
     void sendCv(int trackIndex, float cv);
+    void sendVelocity(int trackIndex, int velocity);
     void sendProgramChange(int channel, int programNumber);
 
     // Malekko integration
